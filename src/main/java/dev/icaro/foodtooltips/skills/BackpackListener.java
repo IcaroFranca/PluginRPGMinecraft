@@ -47,17 +47,10 @@ implements Listener {
             return;
         }
         if (e.getRawSlot() < top) {
-            ItemStack incoming;
-            switch (e.getAction()) {
-                case HOTBAR_SWAP: 
-                case HOTBAR_MOVE_AND_READD: {
-                    ItemStack itemStack = p.getInventory().getItem(e.getHotbarButton());
-                    break;
-                }
-                default: {
-                    ItemStack itemStack = incoming = e.getCursor();
-                }
-            }
+            ItemStack incoming = switch (e.getAction()) {
+                case HOTBAR_SWAP, HOTBAR_MOVE_AND_READD -> p.getInventory().getItem(e.getHotbarButton());
+                default -> e.getCursor();
+            };
             if (incoming != null && !incoming.getType().isAir() && !this.bags.accepts(type, incoming.getType())) {
                 e.setCancelled(true);
             }
