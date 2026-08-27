@@ -30,9 +30,11 @@ WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.26.1` → `0.26.2`) para correções e
-ajustes pequenos; minor (`0.26.1` → `0.27.0`) para features novas como a
-árvore de combate.
+os dois precisam bater. Updates menores só mexem no terceiro número (ex.:
+`0.26.1` → `0.26.2`) — correções, ajustes de config, pequenos retoques de
+texto/UI. Updates maiores (features novas, mudanças de sistema, como a
+árvore de combate) sobem o segundo número e **zeram** o terceiro (ex.:
+`0.26.2` → `0.27.0`, nunca `0.26.3`).
 
 ## Módulos
 
