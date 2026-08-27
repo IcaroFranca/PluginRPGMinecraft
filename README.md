@@ -6,7 +6,7 @@ registrado como `NexusRPG` no `plugin.yml`).
 ## Estado deste repositório
 
 Este repositório estava vazio; o único artefato disponível era o `.jar` compilado
-da versão `0.20.9` (sem código-fonte). O código em `src/main/java` foi
+da versão `0.21.0` (sem código-fonte). O código em `src/main/java` foi
 **reconstruído por descompilação** (CFR) desse jar e reorganizado como projeto
 Maven. Funcionalmente deve corresponder ao jar original, mas:
 
@@ -24,9 +24,15 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.20.9.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.21.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
+
+**Versionamento**: a cada mudança publicada, suba o número da versão em
+`pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
+os dois precisam bater. Patch (`0.21.0` → `0.21.1`) para correções e
+ajustes pequenos; minor (`0.21.0` → `0.22.0`) para features novas como a
+árvore de combate.
 
 ## Módulos
 
@@ -84,12 +90,16 @@ captura implícita da instância externa. Um terceiro, em
 fora do caso `default` do switch — corrigido reescrevendo como switch
 expression.
 
-### Limitações desta atualização
+### Compilação
 
-Como não há acesso ao repositório da PaperMC nesta sandbox, **nenhum destes
-arquivos foi compilado** — a verificação foi feita por revisão manual
-cuidadosa mais um harness de testes puro-Java (`CombatTreeMath`, sem
-dependência do Bukkit) cobrindo a curva de custo em Valor, o cálculo de
-acertos extras do Ferocity e todas as fórmulas de escala por rank — 80
-checks, 0 falhas. Compile localmente (`mvn package`) antes de subir para um
-servidor de produção.
+Esta sandbox não tem acesso ao repositório da PaperMC, então o build real
+roda no GitHub Actions (`.github/workflows/build.yml`), disparado a cada
+push — é lá que o `.jar` pronto pra baixar é gerado (aba **Actions** do
+repositório → run mais recente → seção **Artifacts**). Foi assim que se
+descobriu, entre outras coisas, que o Minecraft/Paper passou a usar
+versionamento por data (`26.2`, exigindo JDK 25) e uma leva de bugs da
+descompilação original que só o compilador real pegava.
+
+Além disso, `CombatTreeMath` (a matemática da árvore — curva de custo,
+Ferocity, fórmulas de escala por rank) é puro Java sem dependência do
+Bukkit e roda com testes próprios (80 checks) direto nesta sandbox.
