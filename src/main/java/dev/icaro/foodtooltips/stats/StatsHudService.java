@@ -13,12 +13,12 @@ public final class StatsHudService {
         this.gap = gap;
     }
 
-    public void show(Player p, PlayerStats s) {
+    public void show(Player p, PlayerStats s, int defense) {
         TextComponent line = (TextComponent) ((TextComponent) Component.text((String) (Math.round(s.health()) + "/" + Math.round(s.maxHealth()) + "❤"), (TextColor) NamedTextColor.RED)
                 .append((Component) Component.text((String) this.gap)))
-                .append((Component) Component.text((String) (Math.round(s.mana()) + "/" + Math.round(s.maxMana()) + "✎ Mana"), (TextColor) NamedTextColor.AQUA));
+                .append((Component) Component.text((String) (defense + "🛡"), (TextColor) NamedTextColor.GREEN));
         line = (TextComponent) line.append((Component) Component.text((String) this.gap));
-        line = (TextComponent) line.append((Component) Component.text((String) (Math.round(s.vitality()) + "/" + Math.round(s.maxVitality()) + "✿ Vitality"), (TextColor) NamedTextColor.LIGHT_PURPLE));
+        line = (TextComponent) line.append((Component) Component.text((String) (Math.round(s.mana()) + "/" + Math.round(s.maxMana()) + "✎ Mana"), (TextColor) NamedTextColor.AQUA));
         p.sendActionBar((Component) line);
     }
 }
