@@ -62,11 +62,10 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
         register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 13, CombatAbility.SOUL_HARVEST);
 
         // ---- Utility (precision) ----
-        register(CombatAbility.TELEKINESIS, CombatBranch.UTILITY, 10, Kind.PASSIVE, 47);
-        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 10, Kind.ACTIVE_KEYBIND, 38, CombatAbility.TELEKINESIS);
-        register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 29, CombatAbility.SWORD_THROW);
-        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 10, Kind.PASSIVE, 20, CombatAbility.HUNTERS_INSTINCT);
-        register(CombatAbility.RELENTLESS, CombatBranch.UTILITY, 10, Kind.PASSIVE, 11, CombatAbility.CLEAVE);
+        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 10, Kind.ACTIVE_KEYBIND, 47);
+        register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 38, CombatAbility.SWORD_THROW);
+        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 10, Kind.PASSIVE, 29, CombatAbility.HUNTERS_INSTINCT);
+        register(CombatAbility.RELENTLESS, CombatBranch.UTILITY, 10, Kind.PASSIVE, 20, CombatAbility.CLEAVE);
 
         // ---- Synergy (bridges between branches) ----
         register(CombatAbility.VITAL_TOUCH, CombatBranch.SYNERGY, 10, Kind.ACTIVE_MENU, 39, CombatAbility.VAMPIRISM);

@@ -139,11 +139,6 @@ public final class CombatTreeMath {
 
     // ---- Utility / precision --------------------------------------------------
 
-    /** Blocks of nearby loose drops swept into the player's inventory on a Telekinesis kill. */
-    public static double telekinesisMagnetRadius(int rank) {
-        return lerp(1.0, 4.0, rank, MAX_RANK);
-    }
-
     public static double swordThrowDamageFraction(int rank) {
         return lerp(0.10, 0.50, rank, MAX_RANK);
     }

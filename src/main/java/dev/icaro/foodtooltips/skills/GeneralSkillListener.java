@@ -170,7 +170,7 @@ implements Listener {
                 extra -= overflow.getAmount();
             }
         }
-        if (t.skill == SkillType.MINING && this.skills.progress(e.getPlayer(), SkillType.MINING).level() >= 1) {
+        if (t.skill == SkillType.MINING && this.global.telekinesisUnlocked(e.getPlayer())) {
             for (Item item : new ArrayList<>(e.getItems())) {
                 for (ItemStack overflow : e.getPlayer().getInventory().addItem(new ItemStack[]{item.getItemStack()}).values()) {
                     e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), overflow);

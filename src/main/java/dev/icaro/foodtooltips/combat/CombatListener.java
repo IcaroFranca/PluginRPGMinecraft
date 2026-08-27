@@ -194,9 +194,9 @@ public final class CombatListener implements Listener {
                 this.levelUpMessage(p, oldLevel, newLevel, reward, bonusValor);
             }
         }
-        if (this.abilities.enabled(p, CombatAbility.TELEKINESIS)) {
+        if (this.global.telekinesisUnlocked(p)) {
             this.collectDrops(p, e);
-            double radius = this.abilities.telekinesisMagnetRadius(p);
+            double radius = this.global.telekinesisRadius(p);
             if (radius > 0.0) {
                 this.sweepNearbyDrops(p, e.getEntity().getLocation(), radius);
             }

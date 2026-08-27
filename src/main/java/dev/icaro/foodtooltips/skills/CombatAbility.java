@@ -9,7 +9,6 @@ import org.bukkit.Material;
  * is no separate Combat-level requirement.
  */
 public enum CombatAbility {
-    TELEKINESIS(Material.ENDER_PEARL, "Telecinese", "Telekinesis"),
     RUTHLESS_STRIKES(Material.FLINT, "Golpes Implacáveis", "Ruthless Strikes"),
     VAMPIRISM(Material.FERMENTED_SPIDER_EYE, "Vampirismo", "Vampirism"),
     SWORD_THROW(Material.IRON_SWORD, "Arremesso de Espada", "Sword Throw"),

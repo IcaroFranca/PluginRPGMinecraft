@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.22.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.23.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.22.0` → `0.22.1`) para correções e
-ajustes pequenos; minor (`0.22.0` → `0.23.0`) para features novas como a
+os dois precisam bater. Patch (`0.23.0` → `0.23.1`) para correções e
+ajustes pequenos; minor (`0.23.0` → `0.24.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
@@ -50,11 +50,21 @@ ajustes pequenos; minor (`0.22.0` → `0.23.0`) para features novas como a
 
 ## Árvore de Habilidades de Combate
 
-As 16 habilidades de combate originais deixaram de ser liberadas automaticamente
-por nível. Agora elas (mais 4 novas: `RUTHLESS_STRIKES` e `UNDYING_WILL` passivas,
-`ARCANE_SLASH` e `VITAL_TOUCH` ativas) vivem em uma árvore de 20 nós
-(`CombatTreeNode`), organizada em 3 ramos temáticos (Fúria, Sangue, Precisão) que
-convergem em nós de sinergia e no capstone `APEX_WARRIOR`.
+As 15 habilidades de combate originais restantes (a 16ª, `TELEKINESIS`, saiu da
+árvore — ver abaixo) deixaram de ser liberadas automaticamente por nível. Agora
+elas (mais 4 novas: `RUTHLESS_STRIKES` e `UNDYING_WILL` passivas, `ARCANE_SLASH`
+e `VITAL_TOUCH` ativas) vivem em uma árvore de 19 nós (`CombatTreeNode`),
+organizada em 3 ramos temáticos (Fúria, Sangue, Precisão) que convergem em nós
+de sinergia e no capstone `APEX_WARRIOR`.
+
+**Telekinesis é universal**: em vez de fazer parte de uma árvore de skill
+específica, `TELEKINESIS` agora é um perk liberado automaticamente para todo
+jogador que atingir o **Nível Global** configurado (`global-level.telekinesis-level`,
+padrão 3) — sem custo, sem depender de Combate ou Mineração. Uma vez liberado
+(`GlobalLevelService#telekinesisUnlocked`), drops de abates hostis e de blocos
+minerados vão direto pro inventário, e itens soltos próximos também são sugados
+num raio configurável (`global-level.telekinesis-radius`, padrão 3 blocos). O
+status aparece no menu "Seus status" (`/skills`).
 
 - **Moeda**: **Pontos de Sangue** 🩸 (`CombatValorService`). Desbloquear e melhorar um
   nó é gated *somente* por Pontos de Sangue e pelo(s) nó(s) anterior(es) da árvore

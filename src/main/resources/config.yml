@@ -79,4 +79,9 @@ global-level:
   hp-per-level: 5.0
   levels-per-strength: 5
   strength-per-global-level-group: 1
+  # Telekinesis is a universal perk (not tied to any one skill): once a player reaches this
+  # Global Level, block/mob drops go straight to their inventory and nearby loose dropped
+  # items within telekinesis-radius blocks get swept in too.
+  telekinesis-level: 3
+  telekinesis-radius: 3.0
   strength-damage-percent-per-point: 1.0

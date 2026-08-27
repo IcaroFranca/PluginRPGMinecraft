@@ -256,11 +256,6 @@ public final class CombatAbilityService {
         return CombatTreeMath.cleaveMaxTargets(this.rank(p, CombatAbility.CLEAVE));
     }
 
-    /** Radius (blocks) swept for loose dropped items when a Telekinesis-enabled kill happens. */
-    public double telekinesisMagnetRadius(Player p) {
-        return this.enabled(p, CombatAbility.TELEKINESIS) ? CombatTreeMath.telekinesisMagnetRadius(this.rank(p, CombatAbility.TELEKINESIS)) : 0.0;
-    }
-
     public double treasureHunterBonus(Player p) {
         return this.enabled(p, CombatAbility.TREASURE_HUNTER) ? CombatTreeMath.treasureHunterBonus(this.rank(p, CombatAbility.TREASURE_HUNTER)) : 0.0;
     }
@@ -341,7 +336,6 @@ public final class CombatAbilityService {
 
     public String description(CombatAbility a, boolean pt) {
         return switch (a) {
-            case TELEKINESIS -> pt ? "Drops vão direto ao inventário; também suga itens soltos próximos, raio escala por nível." : "Drops go directly to your inventory; also sweeps nearby loose items, radius scales per level.";
             case RUTHLESS_STRIKES -> pt ? "+1% de chance crítica por nível." : "+1% crit chance per level.";
             case VAMPIRISM -> pt ? "Recupera HP ao matar um mob hostil, escala por nível." : "Recover HP after killing a hostile mob, scales per level.";
             case SWORD_THROW -> pt ? "F arremessa a espada; dano e recarga melhoram por nível." : "F throws your sword; damage and cooldown improve per level.";

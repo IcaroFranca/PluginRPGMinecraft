@@ -39,6 +39,8 @@ public final class GlobalLevelService {
     private final int levelsPerStrength;
     private final int strengthPerGroup;
     private final long[] skillRewards;
+    private final int telekinesisLevel;
+    private final double telekinesisRadiusBlocks;
     private Consumer<Player> changeListener = p -> {};
 
     public GlobalLevelService(Plugin plugin, CombatSkillService combat, GeneralSkillService general, BestiaryProgressService bestiary) {
@@ -56,6 +58,22 @@ public final class GlobalLevelService {
         this.strengthPerGroup = Math.max(0, plugin.getConfig().getInt("global-level.strength-per-global-level-group", 1));
         this.strengthPercent = Math.max(0.0, plugin.getConfig().getDouble("global-level.strength-damage-percent-per-point", 1.0));
         this.skillRewards = new long[]{this.reward("level-1-10", 5L), this.reward("level-11-25", 10L), this.reward("level-26-50", 20L), this.reward("level-51-60", 30L), this.reward("level-61-100", 40L), this.reward("level-101-150", 50L), this.reward("level-151-200", 60L)};
+        this.telekinesisLevel = Math.max(1, plugin.getConfig().getInt("global-level.telekinesis-level", 3));
+        this.telekinesisRadiusBlocks = Math.max(0.0, plugin.getConfig().getDouble("global-level.telekinesis-radius", 3.0));
+    }
+
+    /** Global Level required to unlock Telekinesis, the universal "drops come to you" perk. */
+    public int telekinesisRequiredLevel() {
+        return this.telekinesisLevel;
+    }
+
+    public boolean telekinesisUnlocked(Player p) {
+        return this.snapshot(p).level() >= this.telekinesisLevel;
+    }
+
+    /** Blocks swept for nearby loose drops once Telekinesis is unlocked; 0 if not yet unlocked. */
+    public double telekinesisRadius(Player p) {
+        return this.telekinesisUnlocked(p) ? this.telekinesisRadiusBlocks : 0.0;
     }
 
     public void onChange(Consumer<Player> listener) {

@@ -123,9 +123,7 @@ public final class SkillsMenuService {
             }
             if (t == SkillType.MINING) {
                 lore.add(this.text("+1 " + l.choose("Defesa", "Defense"), NamedTextColor.GREEN));
-                if (level == 1) {
-                    lore.add(this.text("✦ " + l.choose("Desbloqueia: Telecinese", "Unlocks: Telekinesis"), NamedTextColor.LIGHT_PURPLE));
-                } else if (level == 3) {
+                if (level == 3) {
                     lore.add(this.text("✦ " + l.choose("Desbloqueia: Vein Miner", "Unlocks: Vein Miner"), NamedTextColor.LIGHT_PURPLE));
                 } else {
                     lore.add(this.text(l.choose("Nenhuma habilidade neste nível.", "No ability at this level."), NamedTextColor.DARK_GRAY));
@@ -288,6 +286,10 @@ public final class SkillsMenuService {
                 this.text(l.choose("Progresso: ", "Progress: ") + g.progress() + "/" + g.required() + " XP", NamedTextColor.YELLOW),
                 this.text(l.choose("XP Global total: ", "Total Global XP: ") + String.format(Locale.US, "%,d", g.totalXp()), NamedTextColor.GRAY),
                 this.text(l.choose("Bônus: +", "Bonuses: +") + Math.round(g.bonusHealth()) + " HP e +" + g.strength() + " Strength", NamedTextColor.LIGHT_PURPLE),
+                this.text(this.global.telekinesisUnlocked(p)
+                        ? "🧲 " + l.choose("Telecinese: LIBERADA", "Telekinesis: UNLOCKED")
+                        : "🧲 " + l.choose("Telecinese: bloqueada (Nível Global ", "Telekinesis: locked (Global Level ") + this.global.telekinesisRequiredLevel() + (l == Language.PT ? ")" : " required)"),
+                        this.global.telekinesisUnlocked(p) ? NamedTextColor.GREEN : NamedTextColor.GRAY),
                 Component.empty(),
                 this.text("❤ " + l.choose("Vida: ", "Health: ") + Math.round(s.health()) + "/" + Math.round(s.maxHealth()), NamedTextColor.RED),
                 this.text("✎ Mana: " + Math.round(s.mana()) + "/" + Math.round(s.maxMana()), NamedTextColor.AQUA),
