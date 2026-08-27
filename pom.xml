@@ -12,8 +12,10 @@
   <description>RPG gameplay plugin for Paper/Spigot Minecraft servers.</description>
 
   <properties>
-    <maven.compiler.source>21</maven.compiler.source>
-    <maven.compiler.target>21</maven.compiler.target>
+    <!-- paper-api 26.2 ships class files built with Java 25 (class file
+         version 69); the compiler release below must match or newer. -->
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Matches the api-version declared in plugin.yml (Paper's post-1.21
          calendar-based versioning: MC 26.2). Bump the build number to the
@@ -61,7 +63,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <release>21</release>
+          <release>25</release>
         </configuration>
       </plugin>
       <plugin>
