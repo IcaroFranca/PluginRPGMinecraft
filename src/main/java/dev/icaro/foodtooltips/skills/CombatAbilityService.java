@@ -49,6 +49,7 @@ public final class CombatAbilityService {
     private final long costPerTier;
     private final long costPerRank;
     private final long costPerRankPerTier;
+    private final double baseCritMultiplier;
 
     private final Map<UUID, Integer> bloodStreak = new HashMap<>();
     private final Map<UUID, Integer> attackCounter = new HashMap<>();
@@ -64,6 +65,12 @@ public final class CombatAbilityService {
         this.costPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-tier", 15L));
         this.costPerRank = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank", 8L));
         this.costPerRankPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank-per-tier", 5L));
+        this.baseCritMultiplier = p.getConfig().getDouble("combat.critical-damage-multiplier", 1.5);
+    }
+
+    /** Effective critical-damage multiplier (base config value, or Critical Mastery's if unlocked), as a raw multiplier (1.5 = +50%). */
+    public double criticalDamageMultiplier(Player p) {
+        return this.criticalMultiplier(p, this.baseCritMultiplier);
     }
 
     // ---- Rank / unlock state -------------------------------------------------

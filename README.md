@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.24.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.25.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.24.0` → `0.24.1`) para correções e
-ajustes pequenos; minor (`0.24.0` → `0.25.0`) para features novas como a
+os dois precisam bater. Patch (`0.25.0` → `0.25.1`) para correções e
+ajustes pequenos; minor (`0.25.0` → `0.26.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
@@ -152,3 +152,24 @@ recompensa pelo menos uma vez.
 mesmo número, já que Strength só vem do Nível Global (não existe fonte
 adicional). Removida a linha duplicada (e o campo `globalStrength` redundante
 em `PlayerStats`); agora é só "Strength: 32".
+
+## Status & Equipamento
+
+A cabeça no menu principal (`/skills`) foi renomeada para "Status &
+Equipamento" e agora mostra, ao passar o mouse, só um resumo curto (estilo
+Hypixel SkyBlock): Velocidade, Strength, Defesa, Dano Crítico, Chance
+Crítica, Vida e Inteligência — cada um com seu próprio ícone (a Inteligência
+ganhou o mesmo ícone ✎ já usado pela Mana, já que uma alimenta a outra).
+"Velocidade" e "Dano Crítico" são novos na UI: Velocidade lê o atributo
+vanilla `MOVEMENT_SPEED` do jogador convertido pra porcentagem (100 = andar
+normal); Dano Crítico usa o novo `CombatAbilityService#criticalDamageMultiplier`
+(config `combat.critical-damage-multiplier` ou o bônus de `CRITICAL_MASTERY`,
+o que estiver ativo).
+
+Clicar na cabeça abre uma tela nova ("Status & Equipamento",
+`SkillsMenuService#openStats`) com o restante dos status, agrupados por ícone
+temático (Combate/espada, Vitalidade/maçã dourada, Magia/estrela, Defesa/escudo,
+Fortune de Mineração/Agricultura/Coleta com os mesmos ícones do menu principal),
+e as 4 peças de armadura que o jogador tem equipadas (capacete, peitoral,
+calças, botas) mostradas como os itens reais — nome, encantos e tudo — lidas
+direto de `Player#getInventory()`; um slot vazio mostra "Nada equipado."

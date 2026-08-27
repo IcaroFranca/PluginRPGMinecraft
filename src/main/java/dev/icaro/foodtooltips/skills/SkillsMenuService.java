@@ -189,7 +189,9 @@ public final class SkillsMenuService {
         }
         switch (v.type()) {
             case MAIN -> {
-                if (slot == 20) {
+                if (slot == 4) {
+                    this.openStats(p);
+                } else if (slot == 20) {
                     this.openCombat(p, 0);
                 } else if (S.containsKey(slot)) {
                     this.openGeneral(p, S.get(slot), 0);
@@ -217,6 +219,11 @@ public final class SkillsMenuService {
                     this.openGlobal(p, v.page() - 1);
                 } else if (slot == 50) {
                     this.openGlobal(p, v.page() + 1);
+                }
+            }
+            case STATS -> {
+                if (slot == 45) {
+                    this.openMain(p);
                 }
             }
             case COMBAT -> {
@@ -330,47 +337,124 @@ public final class SkillsMenuService {
         return this.text("🎒 " + (level == 1 ? l.choose("Desbloqueia mochila: ", "Unlocks backpack: ") : l.choose("Melhora mochila: ", "Upgrades backpack: ")) + slots + l.choose(" espaços", " slots"), NamedTextColor.GOLD);
     }
 
+    /** Condensed hover preview (the head icon in the main menu) — click it to open {@link #openStats}. */
     private ItemStack head(Player p, Language l) {
         PlayerStats s = this.stats.stats(p);
         CombatProgress c = this.combat.progress(p);
-        GlobalLevelSnapshot g = this.global.snapshot(p);
         int defense = this.general.defense(p);
+        long speedPercent = Math.round(this.value(p, Attribute.MOVEMENT_SPEED, 0.1) / 0.1 * 100.0);
+        double critDamage = (this.abilities.criticalDamageMultiplier(p) - 1.0) * 100.0;
+        double critChance = this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p);
         List<Component> lore = List.of(
-                this.text("✦ " + l.choose("Nível Global: ", "Global Level: ") + g.level(), NamedTextColor.GOLD),
-                this.text(l.choose("Progresso: ", "Progress: ") + g.progress() + "/" + g.required() + " XP", NamedTextColor.YELLOW),
-                this.text(l.choose("XP Global total: ", "Total Global XP: ") + String.format(Locale.US, "%,d", g.totalXp()), NamedTextColor.GRAY),
-                this.text(l.choose("Bônus: +", "Bonuses: +") + Math.round(g.bonusHealth()) + " HP e +" + g.strength() + " Strength", NamedTextColor.LIGHT_PURPLE),
-                this.text(this.global.telekinesisUnlocked(p)
-                        ? "🧲 " + l.choose("Telecinese: LIBERADA", "Telekinesis: UNLOCKED")
-                        : "🧲 " + l.choose("Telecinese: bloqueada (Nível Global ", "Telekinesis: locked (Global Level ") + this.global.telekinesisRequiredLevel() + (l == Language.PT ? ")" : " required)"),
-                        this.global.telekinesisUnlocked(p) ? NamedTextColor.GREEN : NamedTextColor.GRAY),
+                this.text(l.choose("Veja seu equipamento, status e mais!", "View your equipment, stats, and more!"), NamedTextColor.GRAY),
                 Component.empty(),
-                this.text("❤ " + l.choose("Vida: ", "Health: ") + Math.round(s.health()) + "/" + Math.round(s.maxHealth()), NamedTextColor.RED),
-                this.text("✎ Mana: " + Math.round(s.mana()) + "/" + Math.round(s.maxMana()), NamedTextColor.AQUA),
-                this.text("✿ Vitality: " + Math.round(s.vitality()) + "/" + Math.round(s.maxVitality()), NamedTextColor.LIGHT_PURPLE),
+                this.text("🏃 " + l.choose("Velocidade: ", "Speed: ") + speedPercent, NamedTextColor.WHITE),
                 this.text("✹ Strength: " + s.strength(), NamedTextColor.RED),
-                this.text("☣ " + l.choose("Chance crítica: ", "Crit Chance: ") + String.format(Locale.US, "%.1f", this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p)) + "%", NamedTextColor.AQUA),
-                this.text("⚔ " + l.choose("Dano da arma: ", "Weapon Damage: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_DAMAGE, 1.0)), NamedTextColor.RED),
-                this.text("⚡ " + l.choose("Velocidade da arma: ", "Weapon Attack Speed: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_SPEED, 4.0)), NamedTextColor.YELLOW),
-                Component.empty(),
-                this.text("Ⓕ Ferocity: " + Math.round(s.ferocity()), NamedTextColor.RED),
-                this.text(l.choose("Alcance de Ataque: ", "Swing Range: ") + String.format(Locale.US, "%.1f", s.swingRange()), NamedTextColor.YELLOW),
-                this.text(l.choose("Inteligência: ", "Intelligence: ") + Math.round(s.intelligence()), NamedTextColor.AQUA),
-                this.text(l.choose("Dano de Habilidade: ", "Ability Damage: ") + Math.round(s.abilityDamage()) + "%", NamedTextColor.LIGHT_PURPLE),
-                this.text(l.choose("Regen. de Vida: ", "Health Regen: ") + Math.round(s.healthRegen()) + "%", NamedTextColor.RED),
-                this.text(l.choose("Cura (Mending): ", "Mending: ") + Math.round(s.mending()) + "%", NamedTextColor.GREEN),
-                Component.empty(),
                 this.text("✦ " + l.choose("Defesa: ", "Defense: ") + defense, NamedTextColor.GREEN),
-                this.text("🛡 " + l.choose("Redução de dano: ", "Damage Reduction: ") + String.format(Locale.US, "%.1f", this.general.damageReduction(p) * 100.0) + "%", NamedTextColor.GREEN),
+                this.text("☠ " + l.choose("Dano Crítico: ", "Crit Damage: ") + String.format(Locale.US, "%.1f", critDamage) + "%", NamedTextColor.BLUE),
+                this.text("☣ " + l.choose("Chance Crítica: ", "Crit Chance: ") + String.format(Locale.US, "%.1f", critChance) + "%", NamedTextColor.BLUE),
+                this.text("❤ " + l.choose("Vida: ", "Health: ") + Math.round(s.health()) + "/" + Math.round(s.maxHealth()), NamedTextColor.RED),
+                this.text("✎ " + l.choose("Inteligência: ", "Intelligence: ") + Math.round(s.intelligence()), NamedTextColor.AQUA),
                 Component.empty(),
-                this.text("⛏ Mining Fortune: " + this.general.fortune(p, SkillType.MINING), NamedTextColor.AQUA),
-                this.text("☀ Farming Fortune: " + this.general.fortune(p, SkillType.FARMING), NamedTextColor.GREEN),
-                this.text("♣ Foraging Fortune: " + this.general.fortune(p, SkillType.FORAGING), NamedTextColor.DARK_GREEN));
-        ItemStack i = this.item(Material.PLAYER_HEAD, l.choose("Seus status", "Your Stats"), lore);
+                this.text(l.choose("Clique para ver mais!", "Click to see more!"), NamedTextColor.YELLOW));
+        ItemStack i = this.item(Material.PLAYER_HEAD, l.choose("Status & Equipamento", "Stats & Equipment"), lore);
         SkullMeta m = (SkullMeta) i.getItemMeta();
         m.setOwningPlayer((OfflinePlayer) p);
         i.setItemMeta(m);
         return i;
+    }
+
+    /** Full breakdown (grouped by icon) plus the player's equipped armor. Opened by clicking {@link #head}. */
+    public void openStats(Player p) {
+        Language l = Language.of(p);
+        Inventory v = this.inv(l.choose("Status & Equipamento", "Stats & Equipment"));
+        int defense = this.general.defense(p);
+        v.setItem(4, this.statsOverviewHead(p, l));
+        v.setItem(20, this.armorSlot(p.getInventory().getHelmet(), l.choose("Capacete", "Helmet"), l));
+        v.setItem(29, this.armorSlot(p.getInventory().getChestplate(), l.choose("Peitoral", "Chestplate"), l));
+        v.setItem(38, this.armorSlot(p.getInventory().getLeggings(), l.choose("Calças", "Leggings"), l));
+        v.setItem(47, this.armorSlot(p.getInventory().getBoots(), l.choose("Botas", "Boots"), l));
+        v.setItem(22, this.combatStatsItem(p, l));
+        v.setItem(24, this.vitalsStatsItem(p, l));
+        v.setItem(31, this.magicStatsItem(p, l));
+        v.setItem(33, this.defenseStatsItem(p, l, defense));
+        v.setItem(40, this.fortuneItem(p, SkillType.MINING, l, NamedTextColor.AQUA));
+        v.setItem(42, this.fortuneItem(p, SkillType.FARMING, l, NamedTextColor.GREEN));
+        v.setItem(44, this.fortuneItem(p, SkillType.FORAGING, l, NamedTextColor.DARK_GREEN));
+        v.setItem(45, this.item(Material.BARRIER, l.choose("Voltar às skills", "Back to skills"), List.of()));
+        this.open(p, v, new View(Type.STATS, 0, null));
+    }
+
+    private ItemStack statsOverviewHead(Player p, Language l) {
+        GlobalLevelSnapshot g = this.global.snapshot(p);
+        CombatProgress c = this.combat.progress(p);
+        List<Component> lore = List.of(
+                this.text("✦ " + l.choose("Nível Global: ", "Global Level: ") + g.level(), NamedTextColor.GOLD),
+                this.text(l.choose("Progresso: ", "Progress: ") + g.progress() + "/" + g.required() + " XP", NamedTextColor.YELLOW),
+                this.text(l.choose("Nível de Combate: ", "Combat Level: ") + c.level(), NamedTextColor.GREEN),
+                this.text(this.global.telekinesisUnlocked(p)
+                        ? "🧲 " + l.choose("Telecinese: LIBERADA", "Telekinesis: UNLOCKED")
+                        : "🧲 " + l.choose("Telecinese: bloqueada (Nível Global ", "Telekinesis: locked (Global Level ") + this.global.telekinesisRequiredLevel() + (l == Language.PT ? ")" : " required)"),
+                        this.global.telekinesisUnlocked(p) ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        ItemStack i = this.item(Material.PLAYER_HEAD, p.getName(), lore);
+        SkullMeta m = (SkullMeta) i.getItemMeta();
+        m.setOwningPlayer((OfflinePlayer) p);
+        i.setItemMeta(m);
+        return i;
+    }
+
+    /** The player's actual equipped piece (real item, with its own name/enchants/lore), or an empty placeholder. */
+    private ItemStack armorSlot(ItemStack equipped, String slotName, Language l) {
+        if (equipped == null || equipped.getType().isAir()) {
+            return this.item(Material.GRAY_STAINED_GLASS_PANE, slotName, List.of(this.text(l.choose("Nada equipado.", "Nothing equipped."), NamedTextColor.DARK_GRAY)));
+        }
+        return equipped.clone();
+    }
+
+    private ItemStack combatStatsItem(Player p, Language l) {
+        PlayerStats s = this.stats.stats(p);
+        CombatProgress c = this.combat.progress(p);
+        double critChance = this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p);
+        double critDamage = (this.abilities.criticalDamageMultiplier(p) - 1.0) * 100.0;
+        List<Component> lore = List.of(
+                this.text("☣ " + l.choose("Chance Crítica: ", "Crit Chance: ") + String.format(Locale.US, "%.1f", critChance) + "%", NamedTextColor.AQUA),
+                this.text("☠ " + l.choose("Dano Crítico: ", "Crit Damage: ") + String.format(Locale.US, "%.1f", critDamage) + "%", NamedTextColor.AQUA),
+                this.text("⚔ " + l.choose("Dano da Arma: ", "Weapon Damage: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_DAMAGE, 1.0)), NamedTextColor.RED),
+                this.text("⚡ " + l.choose("Velocidade da Arma: ", "Attack Speed: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_SPEED, 4.0)), NamedTextColor.YELLOW),
+                this.text("Ⓕ Ferocity: " + Math.round(s.ferocity()), NamedTextColor.RED));
+        return this.item(Material.IRON_SWORD, l.choose("Status de Combate", "Combat Stats"), lore);
+    }
+
+    private ItemStack vitalsStatsItem(Player p, Language l) {
+        PlayerStats s = this.stats.stats(p);
+        List<Component> lore = List.of(
+                this.text("❤ " + l.choose("Vida: ", "Health: ") + Math.round(s.health()) + "/" + Math.round(s.maxHealth()), NamedTextColor.RED),
+                this.text("✎ Mana: " + Math.round(s.mana()) + "/" + Math.round(s.maxMana()), NamedTextColor.AQUA),
+                this.text("✿ Vitality: " + Math.round(s.vitality()) + "/" + Math.round(s.maxVitality()), NamedTextColor.LIGHT_PURPLE),
+                this.text(l.choose("Regen. de Vida: ", "Health Regen: ") + Math.round(s.healthRegen()) + "%", NamedTextColor.RED),
+                this.text(l.choose("Cura (Mending): ", "Mending: ") + Math.round(s.mending()) + "%", NamedTextColor.GREEN));
+        return this.item(Material.GOLDEN_APPLE, l.choose("Vitalidade", "Vitals"), lore);
+    }
+
+    private ItemStack magicStatsItem(Player p, Language l) {
+        PlayerStats s = this.stats.stats(p);
+        List<Component> lore = List.of(
+                this.text("✎ " + l.choose("Inteligência: ", "Intelligence: ") + Math.round(s.intelligence()), NamedTextColor.AQUA),
+                this.text(l.choose("Dano de Habilidade: ", "Ability Damage: ") + Math.round(s.abilityDamage()) + "%", NamedTextColor.LIGHT_PURPLE),
+                this.text(l.choose("Alcance de Ataque: ", "Swing Range: ") + String.format(Locale.US, "%.1f", s.swingRange()), NamedTextColor.YELLOW));
+        return this.item(Material.NETHER_STAR, l.choose("Magia", "Magic"), lore);
+    }
+
+    private ItemStack defenseStatsItem(Player p, Language l, int defense) {
+        List<Component> lore = List.of(
+                this.text("✦ " + l.choose("Defesa: ", "Defense: ") + defense, NamedTextColor.GREEN),
+                this.text("🛡 " + l.choose("Redução de dano: ", "Damage Reduction: ") + String.format(Locale.US, "%.1f", this.general.damageReduction(p) * 100.0) + "%", NamedTextColor.GREEN));
+        return this.item(Material.SHIELD, l.choose("Defesa", "Defense"), lore);
+    }
+
+    private ItemStack fortuneItem(Player p, SkillType t, Language l, NamedTextColor color) {
+        List<Component> lore = List.of(this.text(t.name(l == Language.PT) + " Fortune: " + this.general.fortune(p, t), color));
+        return this.item(t.icon(), t.name(l == Language.PT) + " Fortune", lore);
     }
 
     private double value(Player p, Attribute a, double f) {
@@ -396,6 +480,6 @@ public final class SkillsMenuService {
     }
 
     private enum Type {
-        MAIN, COMBAT, GENERAL, GLOBAL
+        MAIN, COMBAT, GENERAL, GLOBAL, STATS
     }
 }
