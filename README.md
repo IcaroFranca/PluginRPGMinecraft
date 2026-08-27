@@ -50,7 +50,7 @@ por nível. Agora elas (mais 4 novas: `RUTHLESS_STRIKES` e `UNDYING_WILL` passiv
 (`CombatTreeNode`), organizada em 3 ramos temáticos (Fúria, Sangue, Precisão) que
 convergem em nós de sinergia e no capstone `APEX_WARRIOR`.
 
-- **Moeda**: **Valor** (`CombatValorService`), obtida matando mobs hostis e ao
+- **Moeda**: **Cristais de Combate** (`CombatValorService`), obtida matando mobs hostis e ao
   subir de nível de Combate. Gasta para desbloquear (rank 1) e melhorar
   (ranks seguintes, até 5 — ou 3 para nós de sinergia/capstone) cada nó,
   reduzindo cooldowns e aumentando dano/cura conforme o rank.
@@ -60,6 +60,9 @@ convergem em nós de sinergia e no capstone `APEX_WARRIOR`.
 - **Menu**: `/skills` → "Árvore de Combate" (`CombatTreeMenuService`). Clique
   esquerdo desbloqueia/melhora; shift-clique ativa/desativa passivas
   desbloqueadas; clique direito conjura `ARCANE_SLASH`/`VITAL_TOUCH`.
+  Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
+  = rank máximo; variante em bloco = habilidade ativa, variante em
+  minério/gema = passiva.
 - **Novas stats** (inspiradas em Hypixel SkyBlock, configuráveis em
   `stats.*` no `config.yml`): Ferocity (chance de acerto extra em mobs),
   Swing Range (alcance de interação, quando o servidor expõe o atributo

@@ -320,7 +320,7 @@ public final class CombatListener implements Listener {
         p.sendMessage(Component.text("+" + (double) (newLevel - oldLevel) * 0.5 + "% Crit Chance • +" + (newLevel - oldLevel) * 4 + "% " + l.choose("Dano", "Damage"), NamedTextColor.AQUA));
         p.sendMessage(Component.text("+" + globalXp + " " + l.choose("XP de Nível Global", "Global Level XP"), NamedTextColor.AQUA));
         if (bonusValor > 0L) {
-            p.sendMessage(Component.text("+" + this.valor.format(bonusValor) + " Valor", NamedTextColor.LIGHT_PURPLE));
+            p.sendMessage(Component.text("❖ +" + this.valor.format(bonusValor) + " " + l.choose("Cristais de Combate", "Combat Crystals"), NamedTextColor.LIGHT_PURPLE));
         }
         for (CombatAbility ability : CombatAbility.values()) {
             if (ability.level() <= oldLevel || ability.level() > newLevel) {
