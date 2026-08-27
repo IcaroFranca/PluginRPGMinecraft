@@ -135,7 +135,7 @@ public final class CombatTreeMenuService {
         CombatAbilityService.PurchaseResult result = this.abilities.purchaseRank(p, ability);
         switch (result) {
             case SUCCESS -> p.sendActionBar(this.text("✦ " + ability.name(l == Language.PT) + " " + l.choose("melhorada!", "upgraded!") + " (" + this.abilities.rank(p, ability) + "/" + this.abilities.maxRank(ability) + ")", NamedTextColor.GREEN));
-            case ALREADY_MAX -> p.sendActionBar(this.text(l.choose("Já está no rank máximo.", "Already at max rank."), NamedTextColor.GRAY));
+            case ALREADY_MAX -> p.sendActionBar(this.text(l.choose("Já está no nível máximo.", "Already at max level."), NamedTextColor.GRAY));
             case PREREQUISITE_MISSING -> p.sendActionBar(this.text(l.choose("Desbloqueie os pré-requisitos primeiro.", "Unlock the prerequisites first."), NamedTextColor.RED));
             case INSUFFICIENT_VALOR -> p.sendActionBar(this.text(l.choose("Pontos de Sangue insuficientes.", "Not enough Blood Points."), NamedTextColor.RED));
         }
@@ -151,7 +151,7 @@ public final class CombatTreeMenuService {
                 Component.empty(),
                 this.text(l.choose("🔒 Carvão: bloqueada", "🔒 Coal: locked"), NamedTextColor.DARK_GRAY),
                 this.text(l.choose("✔ Esmeralda: desbloqueada", "✔ Emerald: unlocked"), NamedTextColor.GREEN),
-                this.text(l.choose("★ Diamante: rank máximo", "★ Diamond: max rank"), NamedTextColor.AQUA),
+                this.text(l.choose("★ Diamante: nível máximo", "★ Diamond: max level"), NamedTextColor.AQUA),
                 this.text(l.choose("(bloco = ativa, minério/gema = passiva)", "(block = active, ore/gem = passive)"), NamedTextColor.DARK_GRAY),
                 Component.empty(),
                 this.text(l.choose("Clique: desbloquear/melhorar", "Click: unlock/upgrade"), NamedTextColor.YELLOW),
@@ -191,7 +191,7 @@ public final class CombatTreeMenuService {
 
         List<Component> lore = new ArrayList<>();
         lore.add(this.text(this.abilities.description(ability, l == Language.PT), NamedTextColor.GRAY));
-        lore.add(this.text(node.branch().name(l == Language.PT) + " • " + l.choose("Rank ", "Rank ") + rank + "/" + max, NamedTextColor.DARK_AQUA));
+        lore.add(this.text(node.branch().name(l == Language.PT) + " • " + l.choose("Nível ", "Level ") + rank + "/" + max, NamedTextColor.DARK_AQUA));
         if (!node.prerequisites().isEmpty()) {
             for (CombatAbility prereq : node.prerequisites()) {
                 boolean ok = this.abilities.unlocked(p, prereq);
@@ -199,7 +199,7 @@ public final class CombatTreeMenuService {
             }
         }
         if (maxed) {
-            lore.add(this.text(l.choose("RANK MÁXIMO", "MAX RANK"), NamedTextColor.GOLD));
+            lore.add(this.text(l.choose("NÍVEL MÁXIMO", "MAX LEVEL"), NamedTextColor.GOLD));
         } else {
             long cost = this.abilities.nextRankCost(p, ability);
             lore.add(this.text(CURRENCY_SYMBOL + " " + (unlocked ? l.choose("Melhorar: ", "Upgrade: ") : l.choose("Desbloquear: ", "Unlock: ")) + this.valor.format(cost) + " " + l.choose("Pontos de Sangue", "Blood Points"), NamedTextColor.DARK_RED));

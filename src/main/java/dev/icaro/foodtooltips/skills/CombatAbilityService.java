@@ -341,25 +341,25 @@ public final class CombatAbilityService {
 
     public String description(CombatAbility a, boolean pt) {
         return switch (a) {
-            case TELEKINESIS -> pt ? "Drops vão direto ao inventário; também suga itens soltos próximos, raio escala por rank." : "Drops go directly to your inventory; also sweeps nearby loose items, radius scales per rank.";
-            case RUTHLESS_STRIKES -> pt ? "+1% de chance crítica por rank." : "+1% crit chance per rank.";
-            case VAMPIRISM -> pt ? "Recupera HP ao matar um mob hostil, escala por rank." : "Recover HP after killing a hostile mob, scales per rank.";
-            case SWORD_THROW -> pt ? "F arremessa a espada; dano e recarga melhoram por rank." : "F throws your sword; damage and cooldown improve per rank.";
-            case EXECUTIONER -> pt ? "Dano bônus contra alvos abaixo de 25% HP, escala por rank." : "Bonus damage against targets below 25% HP, scales per rank.";
+            case TELEKINESIS -> pt ? "Drops vão direto ao inventário; também suga itens soltos próximos, raio escala por nível." : "Drops go directly to your inventory; also sweeps nearby loose items, radius scales per level.";
+            case RUTHLESS_STRIKES -> pt ? "+1% de chance crítica por nível." : "+1% crit chance per level.";
+            case VAMPIRISM -> pt ? "Recupera HP ao matar um mob hostil, escala por nível." : "Recover HP after killing a hostile mob, scales per level.";
+            case SWORD_THROW -> pt ? "F arremessa a espada; dano e recarga melhoram por nível." : "F throws your sword; damage and cooldown improve per level.";
+            case EXECUTIONER -> pt ? "Dano bônus contra alvos abaixo de 25% HP, escala por nível." : "Bonus damage against targets below 25% HP, scales per level.";
             case BLOOD_LUST -> pt ? "Após uma sequência de abates sem ser atingido: dano bônus." : "After a kill streak without being hit: bonus damage.";
-            case TREASURE_HUNTER -> pt ? "Mais moedas de mobs, escala por rank." : "More coins from mobs, scales per rank.";
-            case HUNTERS_INSTINCT -> pt ? "Velocidade após um abate hostil, duração escala por rank." : "Speed after a hostile kill, duration scales per rank.";
-            case BERSERKER -> pt ? "Dano bônus quando estiver abaixo de 30% HP, escala por rank." : "Bonus damage while below 30% HP, scales per rank.";
-            case UNDYING_WILL -> pt ? "Reduz dano recebido abaixo de 50% HP, escala por rank." : "Reduces damage taken below 50% HP, scales per rank.";
+            case TREASURE_HUNTER -> pt ? "Mais moedas de mobs, escala por nível." : "More coins from mobs, scales per level.";
+            case HUNTERS_INSTINCT -> pt ? "Velocidade após um abate hostil, duração escala por nível." : "Speed after a hostile kill, duration scales per level.";
+            case BERSERKER -> pt ? "Dano bônus quando estiver abaixo de 30% HP, escala por nível." : "Bonus damage while below 30% HP, scales per level.";
+            case UNDYING_WILL -> pt ? "Reduz dano recebido abaixo de 50% HP, escala por nível." : "Reduces damage taken below 50% HP, scales per level.";
             case VITAL_TOUCH -> pt ? "Clique direito na árvore: cura você e aliados próximos." : "Right-click in the tree: heals you and nearby allies.";
             case COMBAT_MASTERY -> pt ? "Fortalece Sede de Sangue e reduz ainda mais a recarga do Arremesso." : "Strengthens Blood Lust and further reduces Sword Throw's cooldown.";
             case ARCANE_SLASH -> pt ? "Clique direito na árvore: dano mágico direto no alvo (ignora armadura)." : "Right-click in the tree: direct magic damage to your target (bypasses armor).";
-            case CLEAVE -> pt ? "Parte do dano atinge inimigos próximos, alcance escala por rank." : "Part of the damage hits nearby enemies, reach scales per rank.";
-            case ARMOR_PIERCER -> pt ? "Dano bônus contra alvos com armadura, escala por rank." : "Bonus damage against armored targets, scales per rank.";
-            case SOUL_HARVEST -> pt ? "Cura adicional por abate hostil, escala por rank." : "Additional heal per hostile kill, scales per rank.";
-            case CRITICAL_MASTERY -> pt ? "Aumenta o multiplicador de dano crítico, escala por rank." : "Increases the critical damage multiplier, scales per rank.";
-            case SECOND_WIND -> pt ? "Evita um golpe fatal; recarga e cura escalam por rank." : "Prevents a fatal hit; cooldown and heal scale per rank.";
-            case RELENTLESS -> pt ? "A cada N ataques, um crítico garantido; N encolhe por rank." : "Every N attacks, a guaranteed critical; N shrinks per rank.";
+            case CLEAVE -> pt ? "Parte do dano atinge inimigos próximos, alcance escala por nível." : "Part of the damage hits nearby enemies, reach scales per level.";
+            case ARMOR_PIERCER -> pt ? "Dano bônus contra alvos com armadura, escala por nível." : "Bonus damage against armored targets, scales per level.";
+            case SOUL_HARVEST -> pt ? "Cura adicional por abate hostil, escala por nível." : "Additional heal per hostile kill, scales per level.";
+            case CRITICAL_MASTERY -> pt ? "Aumenta o multiplicador de dano crítico, escala por nível." : "Increases the critical damage multiplier, scales per level.";
+            case SECOND_WIND -> pt ? "Evita um golpe fatal; recarga e cura escalam por nível." : "Prevents a fatal hit; cooldown and heal scale per level.";
+            case RELENTLESS -> pt ? "A cada N ataques, um crítico garantido; N encolhe por nível." : "Every N attacks, a guaranteed critical; N shrinks per level.";
             case APEX_WARRIOR -> pt ? "Dano final bônus e piso de recarga menor para o Arremesso." : "Bonus final damage and a lower cooldown floor for Sword Throw.";
         };
     }
