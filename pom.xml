@@ -38,20 +38,16 @@
       <version>${paper.api.version}</version>
       <scope>provided</scope>
     </dependency>
-    <!-- Optional soft-depend: ProtectionService talks to WorldGuard's API
-         directly (compile-time), so it needs this even though the plugin
-         only hooks in when WorldGuard is actually installed on the server. -->
+    <!-- Optional soft-depend: ProtectionService talks to WorldGuard's (and
+         transitively WorldEdit's) API directly at compile time, so it needs
+         this even though the plugin only hooks in when WorldGuard is
+         actually installed on the server. Transitive deps (worldguard-core,
+         worldedit-core, worldedit-bukkit) are needed too - don't exclude them. -->
     <dependency>
       <groupId>com.sk89q.worldguard</groupId>
       <artifactId>worldguard-bukkit</artifactId>
       <version>7.0.13</version>
       <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
   </dependencies>
 
