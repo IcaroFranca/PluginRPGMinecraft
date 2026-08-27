@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.26.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.26.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.26.0` → `0.26.1`) para correções e
-ajustes pequenos; minor (`0.26.0` → `0.27.0`) para features novas como a
+os dois precisam bater. Patch (`0.26.1` → `0.26.2`) para correções e
+ajustes pequenos; minor (`0.26.1` → `0.27.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
