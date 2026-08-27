@@ -198,7 +198,7 @@ public final class ShopService {
             lore.add(Component.empty());
             lore.add(Component.text((String)(value <= 0 ? "N\u00e3o pode ser vendido" : "Valor de venda: " + this.economy.format((long)value * (long)stack.getAmount()) + " \u26c3"), (TextColor)(value <= 0 ? NamedTextColor.RED : NamedTextColor.GOLD)).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
-            meta.getPersistentDataContainer().set(this.salePreviewKey, PersistentDataType.BYTE, 1);
+            meta.getPersistentDataContainer().set(this.salePreviewKey, PersistentDataType.BYTE, (byte) 1);
             stack.setItemMeta(meta);
         }
     }

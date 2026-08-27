@@ -150,7 +150,7 @@ implements Listener {
                 e.setCancelled(true);
                 ItemStack sword = p.getInventory().getItemInMainHand();
                 if (!sword.getType().name().endsWith("_SWORD")) break;
-                sword.editMeta(m -> m.getPersistentDataContainer().set(this.coated, PersistentDataType.BYTE, 1));
+                sword.editMeta(m -> m.getPersistentDataContainer().set(this.coated, PersistentDataType.BYTE, (byte) 1));
                 this.consume(e.getItem());
                 p.sendMessage((Component)Component.text((String)"Wither aplicado permanentemente \u00e0 espada.", (TextColor)NamedTextColor.DARK_PURPLE));
                 break;
@@ -362,7 +362,7 @@ implements Listener {
                 target.damage(10.0, (Entity)p);
             }
             if (type == ShopItem.SOLAR_ARROW) {
-                target.getPersistentDataContainer().set(this.solarFire, PersistentDataType.BYTE, 1);
+                target.getPersistentDataContainer().set(this.solarFire, PersistentDataType.BYTE, (byte) 1);
                 target.setFireTicks(40);
                 target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0.0, 1.0, 0.0), 30, 0.5, 0.5, 0.5, new Particle.DustOptions(Color.BLACK, 1.5f));
             }

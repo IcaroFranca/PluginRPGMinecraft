@@ -45,9 +45,13 @@ public final class BuriedTreasureService {
     }
 
     public void tryFind(Player p, Location origin, DoubleConsumer xpReward) {
-        TreasureRarity rarity;
         int roll = ThreadLocalRandom.current().nextInt(100000);
-        TreasureRarity treasureRarity = roll < 1 ? TreasureRarity.LEGENDARY : (roll < 4 ? TreasureRarity.EPIC : (roll < 16 ? TreasureRarity.RARE : (roll < 66 ? TreasureRarity.UNCOMMON : (rarity = roll < 266 ? TreasureRarity.COMMON : null))));
+        TreasureRarity rarity = roll < 1 ? TreasureRarity.LEGENDARY
+                : roll < 4 ? TreasureRarity.EPIC
+                : roll < 16 ? TreasureRarity.RARE
+                : roll < 66 ? TreasureRarity.UNCOMMON
+                : roll < 266 ? TreasureRarity.COMMON
+                : null;
         if (rarity == null) {
             return;
         }

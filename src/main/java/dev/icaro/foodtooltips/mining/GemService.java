@@ -137,7 +137,7 @@ implements Listener {
             }
         }
         c.getPersistentDataContainer().set(this.dataKey, PersistentDataType.STRING, String.join((CharSequence)";", records));
-        c.getPersistentDataContainer().set(this.generationKey, PersistentDataType.BYTE, 1);
+        c.getPersistentDataContainer().set(this.generationKey, PersistentDataType.BYTE, (byte) 1);
     }
 
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
