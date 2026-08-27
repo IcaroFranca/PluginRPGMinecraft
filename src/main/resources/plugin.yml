@@ -1,0 +1,41 @@
+name: NexusRPG
+version: '0.20.9'
+main: dev.icaro.foodtooltips.FoodTooltipsPlugin
+api-version: '26.2'
+author: icaro
+prefix: NexusRPG
+softdepend: [Geyser-Spigot, floodgate, WorldGuard, GriefPrevention]
+commands:
+  shop:
+    description: Opens the RPG shop.
+    usage: /shop
+  coins:
+    description: Shows or administrates coin balances.
+    usage: /coins [player] [set|give] [amount]
+  skills:
+    description: Opens the Skills menu.
+    usage: /skills
+  bestiary:
+    description: Opens the mob bestiary and milestones.
+    usage: /bestiary
+  rpgstats:
+    description: Development stats command.
+    permission: foodtooltips.admin
+  setskilllevel:
+    description: Sets a player's skill level.
+    usage: /setskilllevel [player] <skill> <0-200>
+    permission: foodtooltips.admin
+  nivelglobal:
+    description: Shows Global Level progress and bonuses.
+    usage: /nivelglobal
+    aliases: [globallevel, level]
+  globalxp:
+    description: Administrates Global Level XP for online players.
+    usage: /globalxp <player> <get|give|set|remove> [amount]
+    permission: foodtooltips.admin
+  levelcolor:
+    description: Opens the Global Level color theme menu.
+    usage: /levelcolor [theme]
+permissions:
+  foodtooltips.admin:
+    default: op

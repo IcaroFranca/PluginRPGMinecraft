@@ -1,0 +1,48 @@
+stats:
+  base-mana: 100.0
+  mana-regeneration-per-second: 2.0
+hud:
+  update-ticks: 5
+  spacing: "     "
+combat:
+  max-level: 200
+  crit-chance-per-level: 0.5
+  damage-percent-per-level: 4.0
+  critical-damage-multiplier: 1.5
+  attack-speed-level-0: 4.0
+  attack-speed-level-25: 8.0
+  attack-speed-level-50: 20.0
+  xp-base: 100.0
+  xp-exponent: 1.65
+  hostile-xp-health-multiplier: 2.0
+  hostile-xp-level-multiplier: 3.0
+mob-visuals:
+  # Text Display view range uses 64-block units: 0.25 = approximately 16 blocks.
+  label-view-range: 0.12
+  damage-view-range: 0.25
+  label-max-distance-blocks: 10.0
+  # How often (in server ticks) mob name/HP labels re-check their text and viewer visibility.
+  # The HP text also updates instantly on every hit regardless of this value. Higher = cheaper.
+  update-ticks: 3
+global-level:
+  xp-per-level: 100
+  # How often (in server ticks, 20 = 1s) the level-number color animation advances a frame.
+  # Lower = more frequent updates and a smoother gradient. 1 = every tick (smoothest).
+  badge-animation-ticks: 1
+  # Interpolation sub-steps between each palette color. Higher = smoother, softer transition
+  # (more precomputed frames). The overall transition speed stays roughly the same because
+  # more steps are shown per second. 1 = original behaviour.
+  badge-animation-smoothness: 4
+  skill-xp:
+    level-1-10: 5
+    level-11-25: 10
+    level-26-50: 20
+    level-51-60: 30
+    level-61-100: 40
+    level-101-150: 50
+    level-151-200: 60
+  milestone-xp: 4
+  hp-per-level: 5.0
+  levels-per-strength: 5
+  strength-per-global-level-group: 1
+  strength-damage-percent-per-point: 1.0
