@@ -46,12 +46,15 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
     }
 
     static {
-        // ---- Fury (offense) ----
+        // ---- Fury (offense) ---- ordered so each node's max-rank payoff is >= the one
+        // before it: RUTHLESS_STRIKES (+10% crit, flat) < EXECUTIONER/ARMOR_PIERCER (+25%
+        // dmg, both conditional) < BERSERKER (+30% dmg, conditional) < CRITICAL_MASTERY
+        // (unconditional crit-damage multiplier, the branch's real finisher).
         register(CombatAbility.RUTHLESS_STRIKES, CombatBranch.FURY, 10, Kind.PASSIVE, 51);
         register(CombatAbility.EXECUTIONER, CombatBranch.FURY, 10, Kind.PASSIVE, 42, CombatAbility.RUTHLESS_STRIKES);
-        register(CombatAbility.BERSERKER, CombatBranch.FURY, 10, Kind.PASSIVE, 33, CombatAbility.EXECUTIONER);
-        register(CombatAbility.ARMOR_PIERCER, CombatBranch.FURY, 10, Kind.PASSIVE, 24, CombatAbility.BERSERKER);
-        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 10, Kind.PASSIVE, 15, CombatAbility.ARMOR_PIERCER);
+        register(CombatAbility.ARMOR_PIERCER, CombatBranch.FURY, 10, Kind.PASSIVE, 33, CombatAbility.EXECUTIONER);
+        register(CombatAbility.BERSERKER, CombatBranch.FURY, 10, Kind.PASSIVE, 24, CombatAbility.ARMOR_PIERCER);
+        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 10, Kind.PASSIVE, 15, CombatAbility.BERSERKER);
 
         // ---- Sustain (blood) ----
         register(CombatAbility.VAMPIRISM, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 49);
@@ -61,10 +64,13 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
         register(CombatAbility.SOUL_HARVEST, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 22, CombatAbility.UNDYING_WILL);
         register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 13, CombatAbility.SOUL_HARVEST);
 
-        // ---- Utility (precision) ----
-        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 10, Kind.ACTIVE_KEYBIND, 47);
-        register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 38, CombatAbility.SWORD_THROW);
-        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 10, Kind.PASSIVE, 29, CombatAbility.HUNTERS_INSTINCT);
+        // ---- Utility (precision) ---- root is a minor passive (like every other branch's
+        // root), not a full active ability: SWORD_THROW (an active with real burst damage)
+        // now costs a tier more than the other branches' cheapest node, same as ARCANE_SLASH
+        // and VITAL_TOUCH already do in Synergy.
+        register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 47);
+        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 10, Kind.ACTIVE_KEYBIND, 38, CombatAbility.HUNTERS_INSTINCT);
+        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 10, Kind.PASSIVE, 29, CombatAbility.SWORD_THROW);
         register(CombatAbility.RELENTLESS, CombatBranch.UTILITY, 10, Kind.PASSIVE, 20, CombatAbility.CLEAVE);
 
         // ---- Synergy (bridges between branches) ----

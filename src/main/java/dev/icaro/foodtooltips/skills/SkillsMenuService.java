@@ -31,6 +31,13 @@ import org.bukkit.inventory.meta.SkullMeta;
 public final class SkillsMenuService {
     private static final int[] N = new int[]{9, 18, 27, 28, 29, 20, 11, 2, 3, 4, 13, 22, 31, 32, 33, 24, 15, 6, 7, 8, 17, 26, 35, 44, 53};
     private static final Map<Integer, SkillType> S = Map.of(22, SkillType.FARMING, 24, SkillType.FISHING, 30, SkillType.MINING, 31, SkillType.FORAGING, 32, SkillType.ENCHANTING, 33, SkillType.ALCHEMY);
+    /**
+     * Global Level is XP-based and uncapped in practice, but its rewards (HP every
+     * level, Strength every {@code levelsPerStrength} levels, the Telekinesis unlock)
+     * repeat the same simple pattern forever, so the browser only needs to go this far
+     * to show every distinct kind of reward at least once.
+     */
+    private static final int GLOBAL_MENU_MAX_LEVEL = 100;
 
     private final CombatSkillService combat;
     private final GeneralSkillService general;
@@ -81,6 +88,7 @@ public final class SkillsMenuService {
         }
         v.setItem(48, this.item(Material.COMPARATOR, l.choose("Árvore de Combate", "Combat Tree"), List.of(this.click(l))));
         v.setItem(49, this.item(Material.KNOWLEDGE_BOOK, l.choose("Bestiário", "Bestiary"), List.of(this.click(l))));
+        v.setItem(50, this.item(Material.NETHER_STAR, l.choose("Nível Global", "Global Level"), List.of(this.globalLine(p, l), this.click(l))));
         v.setItem(51, this.item(Material.EMERALD, l.choose("Loja", "Shop"), List.of(this.click(l))));
         this.open(p, v, new View(Type.MAIN, 0, null));
     }
@@ -144,6 +152,36 @@ public final class SkillsMenuService {
         this.open(p, v, new View(Type.GENERAL, page, t));
     }
 
+    public void openGlobal(Player p, int page) {
+        page = this.clamp(page, GLOBAL_MENU_MAX_LEVEL);
+        Language l = Language.of(p);
+        Inventory v = this.inv(l.choose("Nível Global", "Global Level"));
+        GlobalLevelSnapshot g = this.global.snapshot(p);
+        int currentLevel = (int) Math.min(Integer.MAX_VALUE, g.level());
+        int levelsPerStrength = Math.max(1, this.global.levelsPerStrength());
+        for (int i = 0; i < 25; ++i) {
+            int level = page * 25 + i + 1;
+            ArrayList<Component> lore = new ArrayList<>(List.of(
+                    this.text("❤ +" + Math.round(this.global.hpPerLevel()) + " " + l.choose("HP máximo", "max HP"), NamedTextColor.RED)));
+            if (level % levelsPerStrength == 0) {
+                lore.add(this.text("✹ +" + this.global.strengthPerGroup() + " Strength", NamedTextColor.GOLD));
+            }
+            if (level == this.global.telekinesisRequiredLevel()) {
+                lore.add(this.text("🧲 " + l.choose("Desbloqueia: Telecinese", "Unlocks: Telekinesis"), NamedTextColor.LIGHT_PURPLE));
+            }
+            if (lore.size() == 1) {
+                lore.add(this.text(l.choose("Nenhuma outra recompensa neste nível.", "No other reward at this level."), NamedTextColor.DARK_GRAY));
+            }
+            if (level == currentLevel + 1) {
+                lore.add(this.text(g.progress() + "/" + g.required() + " XP", NamedTextColor.GREEN));
+            }
+            v.setItem(N[i], this.node(level, currentLevel, l, lore));
+        }
+        v.setItem(0, this.item(Material.NETHER_STAR, l.choose("Progressão de Nível Global", "Global Level Progression"), List.of(this.globalLine(p, l))));
+        this.nav(v, l, page, GLOBAL_MENU_MAX_LEVEL);
+        this.open(p, v, new View(Type.GLOBAL, page, null));
+    }
+
     public boolean handleClick(Player p, int slot) {
         View v = this.views.get(p.getUniqueId());
         if (v == null) {
@@ -166,8 +204,19 @@ public final class SkillsMenuService {
                     this.tree.open(p);
                 } else if (slot == 49) {
                     p.performCommand("bestiary");
+                } else if (slot == 50) {
+                    this.openGlobal(p, 0);
                 } else if (slot == 51) {
                     p.performCommand("shop");
+                }
+            }
+            case GLOBAL -> {
+                if (slot == 45) {
+                    this.openMain(p);
+                } else if (slot == 48 && v.page() > 0) {
+                    this.openGlobal(p, v.page() - 1);
+                } else if (slot == 50) {
+                    this.openGlobal(p, v.page() + 1);
                 }
             }
             case COMBAT -> {
@@ -247,6 +296,11 @@ public final class SkillsMenuService {
         return this.text(l.choose("Nível ", "Level ") + x.level() + (x.level() >= this.combat.maxLevel() ? " (MAX)" : " • " + Math.round(x.xp()) + "/" + Math.round(x.requiredXp()) + " XP"), NamedTextColor.GREEN);
     }
 
+    private Component globalLine(Player p, Language l) {
+        GlobalLevelSnapshot g = this.global.snapshot(p);
+        return this.text(l.choose("Nível ", "Level ") + g.level() + " • " + g.progress() + "/" + g.required() + " XP", NamedTextColor.GOLD);
+    }
+
     private Component skillLine(Player p, SkillType t, Language l) {
         SkillProgress x = this.general.progress(p, t);
         return this.text(l.choose("Nível ", "Level ") + x.level() + (x.level() >= this.general.maxLevel() ? " (MAX)" : " • " + Math.round(x.xp()) + "/" + Math.round(x.requiredXp()) + " XP"), NamedTextColor.GREEN);
@@ -295,7 +349,6 @@ public final class SkillsMenuService {
                 this.text("✎ Mana: " + Math.round(s.mana()) + "/" + Math.round(s.maxMana()), NamedTextColor.AQUA),
                 this.text("✿ Vitality: " + Math.round(s.vitality()) + "/" + Math.round(s.maxVitality()), NamedTextColor.LIGHT_PURPLE),
                 this.text("✹ Strength: " + s.strength(), NamedTextColor.RED),
-                this.text(l.choose("Bônus do Nível Global: +", "Global Level Bonus: +") + s.globalStrength(), NamedTextColor.DARK_RED),
                 this.text("☣ " + l.choose("Chance crítica: ", "Crit Chance: ") + String.format(Locale.US, "%.1f", this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p)) + "%", NamedTextColor.AQUA),
                 this.text("⚔ " + l.choose("Dano da arma: ", "Weapon Damage: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_DAMAGE, 1.0)), NamedTextColor.RED),
                 this.text("⚡ " + l.choose("Velocidade da arma: ", "Weapon Attack Speed: ") + String.format(Locale.US, "%.1f", this.value(p, Attribute.ATTACK_SPEED, 4.0)), NamedTextColor.YELLOW),
@@ -343,6 +396,6 @@ public final class SkillsMenuService {
     }
 
     private enum Type {
-        MAIN, COMBAT, GENERAL
+        MAIN, COMBAT, GENERAL, GLOBAL
     }
 }

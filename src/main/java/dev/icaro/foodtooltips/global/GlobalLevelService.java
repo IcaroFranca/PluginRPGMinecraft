@@ -76,6 +76,21 @@ public final class GlobalLevelService {
         return this.telekinesisUnlocked(p) ? this.telekinesisRadiusBlocks : 0.0;
     }
 
+    /** Max HP granted per Global Level (flat, every level). */
+    public double hpPerLevel() {
+        return this.hpPerLevel;
+    }
+
+    /** How many Global Levels it takes to earn one group of Strength. */
+    public int levelsPerStrength() {
+        return this.levelsPerStrength;
+    }
+
+    /** Strength granted per group of {@link #levelsPerStrength()} Global Levels. */
+    public int strengthPerGroup() {
+        return this.strengthPerGroup;
+    }
+
     public void onChange(Consumer<Player> listener) {
         this.changeListener = listener == null ? p -> {} : listener;
     }

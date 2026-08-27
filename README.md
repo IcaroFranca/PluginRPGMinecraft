@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.23.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.24.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.23.0` → `0.23.1`) para correções e
-ajustes pequenos; minor (`0.23.0` → `0.24.0`) para features novas como a
+os dois precisam bater. Patch (`0.24.0` → `0.24.1`) para correções e
+ajustes pequenos; minor (`0.24.0` → `0.25.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
@@ -87,7 +87,19 @@ status aparece no menu "Seus status" (`/skills`).
   desbloqueadas; clique direito conjura `ARCANE_SLASH`/`VITAL_TOUCH`.
   Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
   = rank máximo; variante em bloco = habilidade ativa, variante em
-  minério/gema = passiva.
+  minério/gema = passiva. O botão de voltar fica no canto inferior esquerdo
+  e a cabeça do jogador (moeda/legenda) no canto inferior direito.
+- **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
+  "nível atual → próximo nível" de cada stat que ele concede
+  (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
+  "Recarga: 21.0s → 18.0s". Com a habilidade ainda bloqueada, mostra uma prévia
+  do nível 1; já no nível máximo, mostra só o valor final.
+- **Ordem de desbloqueio**: dentro de cada ramo, os nós estão ordenados para que
+  o ganho no rank máximo nunca diminua conforme o tier sobe (ex.: no ramo Fúria,
+  `ARMOR_PIERCER` agora vem antes de `BERSERKER`, já que davam a mesma coisa "fora
+  de ordem" antes). O nó raiz de cada ramo agora é sempre uma passiva simples —
+  `SWORD_THROW` (ativa) deixou de ser a raiz do ramo Precisão, com
+  `HUNTERS_INSTINCT` em seu lugar.
 - **Bestiário**: cada entrada mostra quantos Pontos de Sangue 🩸 aquele mob dropa
   (`BestiaryMenuService`), ao lado de moedas, XP de combate e drops.
 - **Novas stats** (inspiradas em Hypixel SkyBlock, configuráveis em
@@ -123,4 +135,20 @@ descompilação original que só o compilador real pegava.
 
 Além disso, `CombatTreeMath` (a matemática da árvore — curva de custo,
 Ferocity, fórmulas de escala por rank) é puro Java sem dependência do
-Bukkit e roda com testes próprios (80 checks) direto nesta sandbox.
+Bukkit e roda com testes próprios (73 checks) direto nesta sandbox.
+
+## Nível Global
+
+`/skills` → "Nível Global" (`SkillsMenuService#openGlobal`) abre uma tela no
+mesmo formato paginado de 25-níveis-por-página das telas de Combate/skills
+gerais, mostrando o que cada nível concede: +HP máximo (todo nível), +Strength
+(a cada `global-level.levels-per-strength` níveis) e o desbloqueio da
+Telecinese no nível configurado. Nível Global é baseado em XP linear e não tem
+teto real, mas a tela só precisa ir até o nível 100 pra mostrar todo padrão de
+recompensa pelo menos uma vez.
+
+**Strength é um stat só**: o menu "Seus status" (`/skills`) mostrava
+"Strength: 32" seguido de "Bônus do Nível Global: +32" — dois rótulos pro
+mesmo número, já que Strength só vem do Nível Global (não existe fonte
+adicional). Removida a linha duplicada (e o campo `globalStrength` redundante
+em `PlayerStats`); agora é só "Strength: 32".

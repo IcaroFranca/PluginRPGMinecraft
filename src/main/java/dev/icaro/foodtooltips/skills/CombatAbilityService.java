@@ -3,13 +3,18 @@ package dev.icaro.foodtooltips.skills;
 import dev.icaro.foodtooltips.i18n.Language;
 import dev.icaro.foodtooltips.stats.PlayerStats;
 import dev.icaro.foodtooltips.stats.PlayerStatsService;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.IntToDoubleFunction;
+import java.util.function.IntToLongFunction;
+import java.util.function.IntUnaryOperator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -330,6 +335,131 @@ public final class CombatAbilityService {
 
     public long vitalTouchCooldownRemainingMillis(Player p) {
         return Math.max(0L, this.vitalTouchCooldowns.getOrDefault(p.getUniqueId(), 0L) - System.currentTimeMillis());
+    }
+
+    // ---- Numeric stat preview (tree tooltip) ------------------------------------
+
+    /** One "current level → next level" numeric readout row for the tree tooltip. */
+    public record StatPreview(String label, String current, String next) {
+    }
+
+    /**
+     * Numeric current/next-level stat readout for the tree tooltip: what this ability
+     * actually does right now, and how much it improves at the next level. When
+     * {@code rank} is 0 (not yet unlocked), "current" previews level 1 instead — useful
+     * for deciding whether to unlock it. {@code next} in the returned rows is null once
+     * the ability is at max level.
+     */
+    public List<StatPreview> statPreview(CombatAbility a, int rank, boolean pt) {
+        int max = this.maxRank(a);
+        int cur = Math.max(1, Math.min(max, rank <= 0 ? 1 : rank));
+        int next = Math.min(max, cur + 1);
+        boolean hasNext = rank < max;
+        List<StatPreview> out = new ArrayList<>();
+        switch (a) {
+            case RUTHLESS_STRIKES -> out.add(this.pointsPlus(pt ? "Chance Crítica" : "Crit Chance", CombatTreeMath::ruthlessStrikesCritBonus, cur, next, hasNext));
+            case VAMPIRISM -> out.add(this.flat(pt ? "Cura por abate" : "Heal per kill", CombatTreeMath::vampirismHeal, cur, next, hasNext, " HP"));
+            case SWORD_THROW -> {
+                out.add(this.pctAbs(pt ? "Dano" : "Damage", CombatTreeMath::swordThrowDamageFraction, cur, next, hasNext));
+                out.add(this.seconds(pt ? "Recarga" : "Cooldown", CombatTreeMath::swordThrowBaseCooldownMillis, cur, next, hasNext));
+            }
+            case EXECUTIONER -> out.add(this.multPct(pt ? "Dano (execução)" : "Damage (execute)", CombatTreeMath::executionerMultiplier, cur, next, hasNext));
+            case BLOOD_LUST -> {
+                out.add(this.pctPlus(pt ? "Dano bônus" : "Damage bonus", CombatTreeMath::bloodLustBonus, cur, next, hasNext));
+                out.add(this.integer(pt ? "Abates p/ ativar" : "Kills to trigger", CombatTreeMath::bloodLustThreshold, cur, next, hasNext, ""));
+            }
+            case TREASURE_HUNTER -> out.add(this.pctPlus(pt ? "Mais moedas" : "More coins", CombatTreeMath::treasureHunterBonus, cur, next, hasNext));
+            case HUNTERS_INSTINCT -> out.add(this.seconds(pt ? "Duração" : "Duration", r -> (long) CombatTreeMath.huntersInstinctDurationTicks(r) * 50L, cur, next, hasNext));
+            case BERSERKER -> out.add(this.multPct(pt ? "Dano bônus" : "Damage bonus", CombatTreeMath::berserkerMultiplier, cur, next, hasNext));
+            case UNDYING_WILL -> out.add(this.pctPlus(pt ? "Redução de dano" : "Damage reduction", CombatTreeMath::undyingWillReduction, cur, next, hasNext));
+            case VITAL_TOUCH -> {
+                out.add(this.flat(pt ? "Cura" : "Heal", CombatTreeMath::vitalTouchBaseHeal, cur, next, hasNext, " HP"));
+                out.add(this.flat(pt ? "Custo (Vitalidade)" : "Cost (Vitality)", CombatTreeMath::vitalTouchVitalityCost, cur, next, hasNext, ""));
+                out.add(this.seconds(pt ? "Recarga" : "Cooldown", CombatTreeMath::vitalTouchCooldownMillis, cur, next, hasNext));
+            }
+            case COMBAT_MASTERY -> {
+                out.add(this.pctPlus(pt ? "Bônus extra (Sede de Sangue)" : "Extra bonus (Blood Lust)", CombatTreeMath::masteryBloodLustBonus, cur, next, hasNext));
+                out.add(this.seconds(pt ? "Redução de recarga (Arremesso)" : "Cooldown cut (Sword Throw)", CombatTreeMath::masteryCooldownReductionMillis, cur, next, hasNext));
+            }
+            case ARCANE_SLASH -> {
+                out.add(this.flat(pt ? "Dano base" : "Base damage", CombatTreeMath::arcaneSlashBaseDamage, cur, next, hasNext, ""));
+                out.add(this.flat(pt ? "Custo de Mana" : "Mana cost", CombatTreeMath::arcaneSlashManaCost, cur, next, hasNext, ""));
+                out.add(this.seconds(pt ? "Recarga" : "Cooldown", CombatTreeMath::arcaneSlashCooldownMillis, cur, next, hasNext));
+            }
+            case CLEAVE -> {
+                out.add(this.pctAbs(pt ? "Dano em área" : "Splash damage", CombatTreeMath::cleaveSplashFraction, cur, next, hasNext));
+                out.add(this.integer(pt ? "Alvos máx." : "Max targets", CombatTreeMath::cleaveMaxTargets, cur, next, hasNext, ""));
+            }
+            case ARMOR_PIERCER -> out.add(this.multPct(pt ? "Dano bônus" : "Damage bonus", CombatTreeMath::armorPiercerMultiplier, cur, next, hasNext));
+            case SOUL_HARVEST -> out.add(this.flat(pt ? "Cura por abate" : "Heal per kill", CombatTreeMath::soulHarvestHeal, cur, next, hasNext, " HP"));
+            case CRITICAL_MASTERY -> out.add(this.multAbs(pt ? "Multiplicador crítico" : "Critical multiplier", CombatTreeMath::criticalMasteryMultiplier, cur, next, hasNext));
+            case SECOND_WIND -> {
+                out.add(this.seconds(pt ? "Recarga" : "Cooldown", CombatTreeMath::secondWindCooldownMillis, cur, next, hasNext));
+                out.add(this.pctAbs(pt ? "Cura ao ativar" : "Heal on trigger", CombatTreeMath::secondWindHealFraction, cur, next, hasNext));
+            }
+            case RELENTLESS -> out.add(this.integer(pt ? "Ataques p/ crítico garantido" : "Hits for guaranteed crit", CombatTreeMath::relentlessInterval, cur, next, hasNext, ""));
+            case APEX_WARRIOR -> {
+                out.add(this.pctPlus(pt ? "Dano final" : "Final damage", CombatTreeMath::apexFinalDamageBonus, cur, next, hasNext));
+                out.add(this.seconds(pt ? "Piso de recarga (Arremesso)" : "Cooldown floor (Sword Throw)", CombatTreeMath::apexCooldownFloorMillis, cur, next, hasNext));
+            }
+        }
+        return out;
+    }
+
+    /** "+X.X%" for a fraction bonus stat (0.10 → "+10.0%"). */
+    private StatPreview pctPlus(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "+%.1f%%", fn.applyAsDouble(cur) * 100.0);
+        String n = hasNext ? String.format(Locale.US, "+%.1f%%", fn.applyAsDouble(next) * 100.0) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** "+X.X%" for a stat that is already expressed in percentage points (1.0 → "+1.0%"), not a 0-1 fraction. */
+    private StatPreview pointsPlus(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "+%.1f%%", fn.applyAsDouble(cur));
+        String n = hasNext ? String.format(Locale.US, "+%.1f%%", fn.applyAsDouble(next)) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** "X.X%" for a fraction stat that is itself the whole value, not a bonus (e.g. Sword Throw's damage). */
+    private StatPreview pctAbs(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "%.1f%%", fn.applyAsDouble(cur) * 100.0);
+        String n = hasNext ? String.format(Locale.US, "%.1f%%", fn.applyAsDouble(next) * 100.0) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** "+X%" derived from a multiplier (1.25 → "+25%"), for multipliers that represent a damage bonus. */
+    private StatPreview multPct(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "+%.0f%%", (fn.applyAsDouble(cur) - 1.0) * 100.0);
+        String n = hasNext ? String.format(Locale.US, "+%.0f%%", (fn.applyAsDouble(next) - 1.0) * 100.0) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** "×X.XX" for a multiplier that replaces a base value outright (e.g. Critical Mastery). */
+    private StatPreview multAbs(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "×%.2f", fn.applyAsDouble(cur));
+        String n = hasNext ? String.format(Locale.US, "×%.2f", fn.applyAsDouble(next)) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** A raw number with an optional unit suffix (e.g. "2.3 HP"). */
+    private StatPreview flat(String label, IntToDoubleFunction fn, int cur, int next, boolean hasNext, String unit) {
+        String c = String.format(Locale.US, "%.1f%s", fn.applyAsDouble(cur), unit);
+        String n = hasNext ? String.format(Locale.US, "%.1f%s", fn.applyAsDouble(next), unit) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** A millis-returning formula, shown in seconds. */
+    private StatPreview seconds(String label, IntToLongFunction fn, int cur, int next, boolean hasNext) {
+        String c = String.format(Locale.US, "%.1fs", fn.applyAsLong(cur) / 1000.0);
+        String n = hasNext ? String.format(Locale.US, "%.1fs", fn.applyAsLong(next) / 1000.0) : null;
+        return new StatPreview(label, c, n);
+    }
+
+    /** A plain integer with an optional unit suffix. */
+    private StatPreview integer(String label, IntUnaryOperator fn, int cur, int next, boolean hasNext, String unit) {
+        String c = fn.applyAsInt(cur) + unit;
+        String n = hasNext ? fn.applyAsInt(next) + unit : null;
+        return new StatPreview(label, c, n);
     }
 
     // ---- Flavor text -----------------------------------------------------------

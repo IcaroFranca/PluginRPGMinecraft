@@ -88,7 +88,6 @@ public final class PlayerStatsService {
                 Math.min(effectiveMaxMana, storedMana),
                 effectiveMaxMana,
                 strength,
-                strength,
                 this.ferocity,
                 this.swingRange,
                 this.intelligence,

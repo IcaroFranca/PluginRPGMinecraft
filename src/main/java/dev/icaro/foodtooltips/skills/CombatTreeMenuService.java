@@ -31,11 +31,12 @@ import org.bukkit.inventory.meta.SkullMeta;
  *
  * <p>Left click unlocks/upgrades a node (spends Blood Points). Shift-click toggles
  * an unlocked passive on/off. Right click casts a menu-triggered active
- * ability (Arcane Slash, Vital Touch).
+ * ability (Arcane Slash, Vital Touch). The back button sits bottom-left and
+ * the player's head (currency/status header) sits bottom-right.
  */
 public final class CombatTreeMenuService {
-    private static final int BACK_SLOT = 8;
-    private static final int HEADER_SLOT = 0;
+    private static final int BACK_SLOT = 45;
+    private static final int HEADER_SLOT = 53;
     private static final String CURRENCY_SYMBOL = "🩸";
     private static final Map<Integer, CombatAbility> SLOT_TO_ABILITY = buildSlotMap();
 
@@ -192,6 +193,13 @@ public final class CombatTreeMenuService {
         List<Component> lore = new ArrayList<>();
         lore.add(this.text(this.abilities.description(ability, l == Language.PT), NamedTextColor.GRAY));
         lore.add(this.text(node.branch().name(l == Language.PT) + " • " + l.choose("Nível ", "Level ") + rank + "/" + max, NamedTextColor.DARK_AQUA));
+        for (CombatAbilityService.StatPreview stat : this.abilities.statPreview(ability, rank, l == Language.PT)) {
+            if (stat.next() != null) {
+                lore.add(this.text("  " + stat.label() + ": " + stat.current() + " → " + stat.next(), NamedTextColor.WHITE));
+            } else {
+                lore.add(this.text("  " + stat.label() + ": " + stat.current() + " (" + l.choose("máx", "max") + ")", NamedTextColor.WHITE));
+            }
+        }
         if (!node.prerequisites().isEmpty()) {
             for (CombatAbility prereq : node.prerequisites()) {
                 boolean ok = this.abilities.unlocked(p, prereq);
