@@ -60,7 +60,7 @@ public final class BuriedTreasureService {
     }
 
     public int found(Player p, TreasureRarity r) {
-        return (Integer)p.getPersistentDataContainer().getOrDefault(this.countKey(r), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)p.getPersistentDataContainer().getOrDefault(this.countKey(r), PersistentDataType.INTEGER, 0);
     }
 
     private NamespacedKey countKey(TreasureRarity r) {
@@ -98,7 +98,7 @@ public final class BuriedTreasureService {
                     double angle = (double)this.age * 0.45;
                     Location hover = start.clone().add(Math.cos(angle) * 0.18, Math.sin((double)this.age * 0.35) * 0.12, Math.sin(angle) * 0.18);
                     orb.teleport(hover);
-                    world.spawnParticle(Particle.DUST, hover, 2, 0.08, 0.08, 0.08, 0.0, (Object)dust);
+                    world.spawnParticle(Particle.DUST, hover, 2, 0.08, 0.08, 0.08, 0.0, dust);
                     return;
                 }
                 Location target = p.getLocation().add(0.0, 1.15, 0.0);
@@ -112,7 +112,7 @@ public final class BuriedTreasureService {
                 double speed = Math.min(0.85, 0.18 + (double)(this.age - 20) * 0.025);
                 Location next = current.add(target.toVector().subtract(current.toVector()).normalize().multiply(Math.min(speed, distance)));
                 orb.teleport(next);
-                world.spawnParticle(Particle.DUST, next, 3, 0.08, 0.08, 0.08, 0.0, (Object)dust);
+                world.spawnParticle(Particle.DUST, next, 3, 0.08, 0.08, 0.08, 0.0, dust);
             }
         }.runTaskTimer(this.plugin, 0L, 1L);
     }
@@ -120,10 +120,10 @@ public final class BuriedTreasureService {
     private void deliver(Player p, TreasureRarity r, Reward reward, DoubleConsumer xpReward) {
         this.skills.depositMineralDust(p, reward.dust);
         PersistentDataContainer data = p.getPersistentDataContainer();
-        long balance = (Long)data.getOrDefault(this.coins, PersistentDataType.LONG, (Object)0L) + reward.coins;
-        data.set(this.coins, PersistentDataType.LONG, (Object)balance);
+        long balance = (Long)data.getOrDefault(this.coins, PersistentDataType.LONG, 0L) + reward.coins;
+        data.set(this.coins, PersistentDataType.LONG, balance);
         NamespacedKey key = this.countKey(r);
-        data.set(key, PersistentDataType.INTEGER, (Object)((Integer)data.getOrDefault(key, PersistentDataType.INTEGER, (Object)0) + 1));
+        data.set(key, PersistentDataType.INTEGER, ((Integer)data.getOrDefault(key, PersistentDataType.INTEGER, 0) + 1));
         xpReward.accept(reward.xp);
         this.announce(p, r, reward);
         this.refreshCoins(p, balance);
@@ -182,7 +182,7 @@ public final class BuriedTreasureService {
         if (objective == null) {
             return;
         }
-        for (String entry : new HashSet(board.getEntries())) {
+        for (String entry : new HashSet<>(board.getEntries())) {
             if (!entry.contains("\u26c3")) continue;
             board.resetScores(entry);
         }

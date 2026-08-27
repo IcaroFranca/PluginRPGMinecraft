@@ -246,7 +246,7 @@ public final class BackpackService {
         }
         YamlConfiguration y = YamlConfiguration.loadConfiguration((File)this.file(id, v.type));
         for (int i = 0; i < v.stored; ++i) {
-            y.set("items." + (v.offset + i), (Object)v.inventory.getItem(i));
+            y.set("items." + (v.offset + i), v.inventory.getItem(i));
         }
         try {
             y.save(this.file(id, v.type));

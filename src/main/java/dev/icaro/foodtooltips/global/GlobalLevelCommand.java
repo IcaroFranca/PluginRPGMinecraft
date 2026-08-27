@@ -42,9 +42,9 @@ implements TabExecutor {
         Language l;
         if (sender instanceof Player) {
             Player p = (Player)sender;
-            v0 = Language.of(p);
+            l = Language.of(p);
         } else {
-            v0 = l = Language.EN;
+            l = Language.EN;
         }
         if (!sender.hasPermission("foodtooltips.admin")) {
             this.msg(sender, l.choose("Sem permiss\u00e3o.", "No permission."), NamedTextColor.RED);

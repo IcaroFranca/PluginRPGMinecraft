@@ -24,7 +24,7 @@ public final class LevelColorService {
     }
 
     public LevelColorTheme selected(Player p) {
-        String id = (String)p.getPersistentDataContainer().getOrDefault(this.key, PersistentDataType.STRING, (Object)"white");
+        String id = (String)p.getPersistentDataContainer().getOrDefault(this.key, PersistentDataType.STRING, "white");
         return LevelColorCatalog.find(id).orElse(LevelColorCatalog.white());
     }
 
@@ -41,7 +41,7 @@ public final class LevelColorService {
         if (!this.unlocked(p, theme)) {
             return false;
         }
-        p.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, (Object)theme.id());
+        p.getPersistentDataContainer().set(this.key, PersistentDataType.STRING, theme.id());
         this.listener.accept(p);
         return true;
     }

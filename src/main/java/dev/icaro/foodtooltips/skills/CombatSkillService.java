@@ -37,8 +37,8 @@ public final class CombatSkillService {
 
     public CombatProgress progress(Player p) {
         PersistentDataContainer d = p.getPersistentDataContainer();
-        int l = (Integer)d.getOrDefault(this.levelKey, PersistentDataType.INTEGER, (Object)0);
-        double x = (Double)d.getOrDefault(this.xpKey, PersistentDataType.DOUBLE, (Object)0.0);
+        int l = (Integer)d.getOrDefault(this.levelKey, PersistentDataType.INTEGER, 0);
+        double x = (Double)d.getOrDefault(this.xpKey, PersistentDataType.DOUBLE, 0.0);
         return new CombatProgress(l, x, l >= this.max ? 0.0 : this.required(l + 1));
     }
 
@@ -52,8 +52,8 @@ public final class CombatSkillService {
         if (l >= this.max) {
             x = 0.0;
         }
-        d.set(this.levelKey, PersistentDataType.INTEGER, (Object)l);
-        d.set(this.xpKey, PersistentDataType.DOUBLE, (Object)x);
+        d.set(this.levelKey, PersistentDataType.INTEGER, l);
+        d.set(this.xpKey, PersistentDataType.DOUBLE, x);
         this.applyAttackSpeed(p);
         return l - old.level();
     }
@@ -61,8 +61,8 @@ public final class CombatSkillService {
     public void setLevel(Player p, int level) {
         int value = Math.max(0, Math.min(this.max, level));
         PersistentDataContainer d = p.getPersistentDataContainer();
-        d.set(this.levelKey, PersistentDataType.INTEGER, (Object)value);
-        d.set(this.xpKey, PersistentDataType.DOUBLE, (Object)0.0);
+        d.set(this.levelKey, PersistentDataType.INTEGER, value);
+        d.set(this.xpKey, PersistentDataType.DOUBLE, 0.0);
         this.applyAttackSpeed(p);
     }
 

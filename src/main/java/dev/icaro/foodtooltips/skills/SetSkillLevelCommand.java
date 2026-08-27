@@ -41,9 +41,9 @@ implements TabExecutor {
         Language language;
         if (sender instanceof Player) {
             Player p = (Player)sender;
-            v0 = Language.of(p);
+            language = Language.of(p);
         } else {
-            v0 = language = Language.EN;
+            language = Language.EN;
         }
         if (args.length == 2 && sender instanceof Player) {
             Player player;

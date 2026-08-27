@@ -23,14 +23,14 @@ public final class BestiaryProgressService {
     }
 
     public int kills(Player player, EntityType type) {
-        return (Integer)player.getPersistentDataContainer().getOrDefault(this.killKey(type), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)player.getPersistentDataContainer().getOrDefault(this.killKey(type), PersistentDataType.INTEGER, 0);
     }
 
     public MilestoneUpdate recordKill(Player player, EntityType type) {
         int beforeKills = this.kills(player, type);
         int beforeMilestones = this.achieved(type, beforeKills);
         int afterKills = this.isBoss(type) ? Math.min(50, beforeKills + 1) : beforeKills + 1;
-        player.getPersistentDataContainer().set(this.killKey(type), PersistentDataType.INTEGER, (Object)afterKills);
+        player.getPersistentDataContainer().set(this.killKey(type), PersistentDataType.INTEGER, afterKills);
         int afterMilestones = this.achieved(type, afterKills);
         this.applyBonusHealth(player);
         return new MilestoneUpdate(afterKills, beforeMilestones, afterMilestones);

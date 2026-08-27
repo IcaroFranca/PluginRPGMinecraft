@@ -106,7 +106,7 @@ implements Listener {
             return;
         }
         ThreadLocalRandom r = ThreadLocalRandom.current();
-        ArrayList<Object> records = new ArrayList<Object>();
+        ArrayList<String> records = new ArrayList<>();
         String previous = (String)c.getPersistentDataContainer().get(this.dataKey, PersistentDataType.STRING);
         if (previous != null && !previous.isBlank()) {
             records.addAll(Arrays.asList(previous.split(";")));
@@ -136,8 +136,8 @@ implements Listener {
                 records.add(bx + "," + by + "," + bz + "," + type.name());
             }
         }
-        c.getPersistentDataContainer().set(this.dataKey, PersistentDataType.STRING, (Object)String.join((CharSequence)";", records));
-        c.getPersistentDataContainer().set(this.generationKey, PersistentDataType.BYTE, (Object)1);
+        c.getPersistentDataContainer().set(this.dataKey, PersistentDataType.STRING, String.join((CharSequence)";", records));
+        c.getPersistentDataContainer().set(this.generationKey, PersistentDataType.BYTE, 1);
     }
 
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
@@ -165,7 +165,7 @@ implements Listener {
             return;
         }
         e.setDropItems(false);
-        c.getPersistentDataContainer().set(this.dataKey, PersistentDataType.STRING, (Object)String.join((CharSequence)";", keep));
+        c.getPersistentDataContainer().set(this.dataKey, PersistentDataType.STRING, String.join((CharSequence)";", keep));
         ItemStack gem = this.create(found, Language.of(e.getPlayer()));
         for (ItemStack overflow : e.getPlayer().getInventory().addItem(new ItemStack[]{gem}).values()) {
             e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), overflow);
@@ -265,7 +265,7 @@ implements Listener {
         PlayerProfile profile = Bukkit.createProfile((UUID)UUID.randomUUID());
         profile.setProperty(new ProfileProperty("textures", this.faithfulTexture(type)));
         m.setPlayerProfile(profile);
-        m.getPersistentDataContainer().set(this.itemKey, PersistentDataType.STRING, (Object)type.name());
+        m.getPersistentDataContainer().set(this.itemKey, PersistentDataType.STRING, type.name());
         i.setItemMeta((ItemMeta)m);
         return i;
     }

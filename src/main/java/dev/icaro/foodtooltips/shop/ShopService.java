@@ -142,7 +142,7 @@ public final class ShopService {
         }
         meta.displayName(Component.text((String)entry.name(l == Language.PT), (TextColor)NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of((TextComponent)Component.text((String)this.description(entry, l == Language.PT), (TextColor)NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false), (TextComponent)Component.text((String)(l.choose("Item especial \u2022 ", "Special item \u2022 ") + this.economy.format(entry.price()) + " \u26c3"), (TextColor)NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false)));
-        meta.getPersistentDataContainer().set(this.itemKey, PersistentDataType.STRING, (Object)entry.name());
+        meta.getPersistentDataContainer().set(this.itemKey, PersistentDataType.STRING, entry.name());
         meta.addItemFlags(new ItemFlag[]{ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP});
         stack.setItemMeta(meta);
         return stack;
@@ -193,12 +193,12 @@ public final class ShopService {
         for (ItemStack stack : inventory.getContents()) {
             ItemMeta meta;
             if (stack == null || stack.getType().isAir() || !stack.hasItemMeta() || (meta = stack.getItemMeta()).getPersistentDataContainer().has(this.salePreviewKey, PersistentDataType.BYTE)) continue;
-            ArrayList<Object> lore = new ArrayList<Object>(Objects.requireNonNullElse(meta.lore(), List.of()));
+            ArrayList<Component> lore = new ArrayList<>(Objects.requireNonNullElse(meta.lore(), List.of()));
             int value = this.isSpecial(stack) ? 0 : this.saleValue(stack);
             lore.add(Component.empty());
             lore.add(Component.text((String)(value <= 0 ? "N\u00e3o pode ser vendido" : "Valor de venda: " + this.economy.format((long)value * (long)stack.getAmount()) + " \u26c3"), (TextColor)(value <= 0 ? NamedTextColor.RED : NamedTextColor.GOLD)).decoration(TextDecoration.ITALIC, false));
             meta.lore(lore);
-            meta.getPersistentDataContainer().set(this.salePreviewKey, PersistentDataType.BYTE, (Object)1);
+            meta.getPersistentDataContainer().set(this.salePreviewKey, PersistentDataType.BYTE, 1);
             stack.setItemMeta(meta);
         }
     }
@@ -211,7 +211,7 @@ public final class ShopService {
         if (!meta.getPersistentDataContainer().has(this.salePreviewKey, PersistentDataType.BYTE)) {
             return;
         }
-        ArrayList lore = new ArrayList(Objects.requireNonNullElse(meta.lore(), List.of()));
+        ArrayList<Component> lore = new ArrayList<>(Objects.requireNonNullElse(meta.lore(), List.of()));
         if (!lore.isEmpty()) {
             lore.remove(lore.size() - 1);
         }
@@ -226,7 +226,7 @@ public final class ShopService {
     private ItemStack preview(ShopItem e, Language l) {
         ItemStack stack = this.create(e, l);
         ItemMeta meta = stack.getItemMeta();
-        ArrayList<Object> lore = new ArrayList<Object>(Objects.requireNonNullElse(meta.lore(), List.of()));
+        ArrayList<Component> lore = new ArrayList<>(Objects.requireNonNullElse(meta.lore(), List.of()));
         lore.add(Component.empty());
         lore.add(Component.text((String)l.choose("Clique para comprar", "Click to purchase"), (TextColor)NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);

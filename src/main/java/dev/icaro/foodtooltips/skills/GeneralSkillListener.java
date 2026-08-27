@@ -154,7 +154,7 @@ implements Listener {
         }
         int fortune = this.skills.fortune(e.getPlayer(), t.skill);
         int copies = fortune / 100 + (ThreadLocalRandom.current().nextInt(100) < fortune % 100 ? 1 : 0);
-        for (Item entity : new ArrayList(e.getItems())) {
+        for (Item entity : new ArrayList<>(e.getItems())) {
             ItemStack base = entity.getItemStack();
             if (base.getType() != t.drop) continue;
             int extra = base.getAmount() * copies;
@@ -171,7 +171,7 @@ implements Listener {
             }
         }
         if (t.skill == SkillType.MINING && this.skills.progress(e.getPlayer(), SkillType.MINING).level() >= 1) {
-            for (Item item : new ArrayList(e.getItems())) {
+            for (Item item : new ArrayList<>(e.getItems())) {
                 for (ItemStack overflow : e.getPlayer().getInventory().addItem(new ItemStack[]{item.getItemStack()}).values()) {
                     e.getBlock().getWorld().dropItemNaturally(e.getBlock().getLocation(), overflow);
                 }

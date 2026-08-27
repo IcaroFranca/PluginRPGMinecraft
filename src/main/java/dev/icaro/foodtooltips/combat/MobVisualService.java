@@ -10,7 +10,6 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -145,7 +144,7 @@ public final class MobVisualService {
         }
         this.renderState.put(e.getUniqueId(), key);
         TextComponent prefix = e instanceof Enemy ? Component.text((String)("[Lv" + this.level(e) + "] "), (TextColor)NamedTextColor.GRAY) : Component.empty();
-        TextComponent named = showName ? ((TranslatableComponent)Component.translatable((String)e.getType().translationKey()).color((TextColor)NamedTextColor.RED)).append((Component)Component.space()) : Component.empty();
+        Component named = showName ? Component.translatable(e.getType().translationKey()).color(NamedTextColor.RED).append(Component.space()) : Component.empty();
         d.text(prefix.append((Component)named).append((Component)Component.text((String)(hp + "/" + maxHp), (TextColor)NamedTextColor.GREEN)).append((Component)Component.text((String)"\u2764", (TextColor)NamedTextColor.RED)));
     }
 

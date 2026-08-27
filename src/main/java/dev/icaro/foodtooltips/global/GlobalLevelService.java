@@ -69,7 +69,7 @@ public final class GlobalLevelService {
     }
 
     public long totalXp(Player p) {
-        return (Long)p.getPersistentDataContainer().getOrDefault(this.xpKey, PersistentDataType.LONG, (Object)0L);
+        return (Long)p.getPersistentDataContainer().getOrDefault(this.xpKey, PersistentDataType.LONG, 0L);
     }
 
     public double strengthMultiplier(Player p) {
@@ -134,7 +134,7 @@ public final class GlobalLevelService {
     }
 
     public long migrate(Player p) {
-        if ((Integer)p.getPersistentDataContainer().getOrDefault(this.migrationKey, PersistentDataType.INTEGER, (Object)0) >= 1) {
+        if ((Integer)p.getPersistentDataContainer().getOrDefault(this.migrationKey, PersistentDataType.INTEGER, 0) >= 1) {
             this.reconcile(p);
             this.applyHealth(p);
             return 0L;
@@ -157,7 +157,7 @@ public final class GlobalLevelService {
         if (amount > 0L) {
             this.setRaw(p, this.safeAdd(before, amount));
         }
-        p.getPersistentDataContainer().set(this.migrationKey, PersistentDataType.INTEGER, (Object)1);
+        p.getPersistentDataContainer().set(this.migrationKey, PersistentDataType.INTEGER, 1);
         this.finishChange(p, before, this.totalXp(p), GlobalXpSource.MIGRATION, false);
         if (amount > 0L) {
             Language l = Language.of(p);
@@ -219,23 +219,23 @@ public final class GlobalLevelService {
     }
 
     private int skillCheckpoint(Player p, GlobalSkill s) {
-        return (Integer)p.getPersistentDataContainer().getOrDefault(this.key("global_skill_" + s.name().toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)p.getPersistentDataContainer().getOrDefault(this.key("global_skill_" + s.name().toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, 0);
     }
 
     private void setSkillCheckpoint(Player p, GlobalSkill s, int level) {
-        p.getPersistentDataContainer().set(this.key("global_skill_" + s.name().toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, (Object)Math.max(0, level));
+        p.getPersistentDataContainer().set(this.key("global_skill_" + s.name().toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, Math.max(0, level));
     }
 
     private int milestoneCheckpoint(Player p, String category) {
-        return (Integer)p.getPersistentDataContainer().getOrDefault(this.key("global_milestone_" + category.toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)p.getPersistentDataContainer().getOrDefault(this.key("global_milestone_" + category.toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, 0);
     }
 
     private void setMilestoneCheckpoint(Player p, String category, int value) {
-        p.getPersistentDataContainer().set(this.key("global_milestone_" + category.toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, (Object)Math.max(0, value));
+        p.getPersistentDataContainer().set(this.key("global_milestone_" + category.toLowerCase(Locale.ROOT)), PersistentDataType.INTEGER, Math.max(0, value));
     }
 
     private void setRaw(Player p, long amount) {
-        p.getPersistentDataContainer().set(this.xpKey, PersistentDataType.LONG, (Object)Math.max(0L, amount));
+        p.getPersistentDataContainer().set(this.xpKey, PersistentDataType.LONG, Math.max(0L, amount));
     }
 
     private long safeAdd(long a, long b) {

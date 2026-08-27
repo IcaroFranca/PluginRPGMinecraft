@@ -18,8 +18,8 @@ public final class GeneralSkillService {
     private static final int MAX_LEVEL = 200;
 
     public SkillProgress progress(Player p, SkillType type) {
-        int level = (Integer)p.getPersistentDataContainer().getOrDefault(this.key(type, "level"), PersistentDataType.INTEGER, (Object)0);
-        double xp = (Double)p.getPersistentDataContainer().getOrDefault(this.key(type, "xp"), PersistentDataType.DOUBLE, (Object)0.0);
+        int level = (Integer)p.getPersistentDataContainer().getOrDefault(this.key(type, "level"), PersistentDataType.INTEGER, 0);
+        double xp = (Double)p.getPersistentDataContainer().getOrDefault(this.key(type, "xp"), PersistentDataType.DOUBLE, 0.0);
         return new SkillProgress(level, xp, level >= 200 ? 0.0 : this.required(level + 1));
     }
 
@@ -36,14 +36,14 @@ public final class GeneralSkillService {
         if (level >= 200) {
             xp = 0.0;
         }
-        p.getPersistentDataContainer().set(this.key(type, "level"), PersistentDataType.INTEGER, (Object)level);
-        p.getPersistentDataContainer().set(this.key(type, "xp"), PersistentDataType.DOUBLE, (Object)xp);
+        p.getPersistentDataContainer().set(this.key(type, "level"), PersistentDataType.INTEGER, level);
+        p.getPersistentDataContainer().set(this.key(type, "xp"), PersistentDataType.DOUBLE, xp);
         return level - before.level();
     }
 
     public void setLevel(Player p, SkillType type, int level) {
-        p.getPersistentDataContainer().set(this.key(type, "level"), PersistentDataType.INTEGER, (Object)Math.max(0, Math.min(200, level)));
-        p.getPersistentDataContainer().set(this.key(type, "xp"), PersistentDataType.DOUBLE, (Object)0.0);
+        p.getPersistentDataContainer().set(this.key(type, "level"), PersistentDataType.INTEGER, Math.max(0, Math.min(200, level)));
+        p.getPersistentDataContainer().set(this.key(type, "xp"), PersistentDataType.DOUBLE, 0.0);
     }
 
     public double required(int level) {
@@ -89,8 +89,8 @@ public final class GeneralSkillService {
     public MiningRecord recordMined(Player p, Material block) {
         int before = this.miningMilestones(p, block);
         NamespacedKey k = this.minedKey(block);
-        int count = (Integer)p.getPersistentDataContainer().getOrDefault(k, PersistentDataType.INTEGER, (Object)0) + 1;
-        p.getPersistentDataContainer().set(k, PersistentDataType.INTEGER, (Object)count);
+        int count = (Integer)p.getPersistentDataContainer().getOrDefault(k, PersistentDataType.INTEGER, 0) + 1;
+        p.getPersistentDataContainer().set(k, PersistentDataType.INTEGER, count);
         MiningCatalog.find(block).ifPresent(e -> {
             if (ThreadLocalRandom.current().nextInt(100) < 20) {
                 this.depositMineralDust(p, Math.max(1L, Math.round(e.skillXp() / 20.0)));
@@ -104,17 +104,17 @@ public final class GeneralSkillService {
     }
 
     public long mineralDust(Player p) {
-        return (Long)p.getPersistentDataContainer().getOrDefault(new NamespacedKey("foodtooltips", "mineral_dust"), PersistentDataType.LONG, (Object)0L);
+        return (Long)p.getPersistentDataContainer().getOrDefault(new NamespacedKey("foodtooltips", "mineral_dust"), PersistentDataType.LONG, 0L);
     }
 
     public void depositMineralDust(Player p, long amount) {
         if (amount > 0L) {
-            p.getPersistentDataContainer().set(new NamespacedKey("foodtooltips", "mineral_dust"), PersistentDataType.LONG, (Object)Math.max(0L, this.mineralDust(p) + amount));
+            p.getPersistentDataContainer().set(new NamespacedKey("foodtooltips", "mineral_dust"), PersistentDataType.LONG, Math.max(0L, this.mineralDust(p) + amount));
         }
     }
 
     public int mined(Player p, Material block) {
-        return (Integer)p.getPersistentDataContainer().getOrDefault(this.minedKey(block), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)p.getPersistentDataContainer().getOrDefault(this.minedKey(block), PersistentDataType.INTEGER, 0);
     }
 
     public int miningMilestones(Player p, Material block) {
@@ -151,7 +151,7 @@ public final class GeneralSkillService {
         if (!day.equals((d = p.getPersistentDataContainer()).get(this.key(SkillType.MINING, "commission_day"), PersistentDataType.STRING))) {
             return 0;
         }
-        return (Integer)d.getOrDefault(this.key(SkillType.MINING, "commission_count"), PersistentDataType.INTEGER, (Object)0);
+        return (Integer)d.getOrDefault(this.key(SkillType.MINING, "commission_count"), PersistentDataType.INTEGER, 0);
     }
 
     public int commissionGoal(Player p) {
@@ -168,14 +168,14 @@ public final class GeneralSkillService {
         NamespacedKey countKey = this.key(SkillType.MINING, "commission_count");
         String day = LocalDate.now().toString();
         if (!day.equals(d.get(dayKey, PersistentDataType.STRING))) {
-            d.set(dayKey, PersistentDataType.STRING, (Object)day);
-            d.set(countKey, PersistentDataType.INTEGER, (Object)0);
+            d.set(dayKey, PersistentDataType.STRING, day);
+            d.set(countKey, PersistentDataType.INTEGER, 0);
         }
-        if ((before = ((Integer)d.getOrDefault(countKey, PersistentDataType.INTEGER, (Object)0)).intValue()) >= this.commissionGoal(p)) {
+        if ((before = ((Integer)d.getOrDefault(countKey, PersistentDataType.INTEGER, 0)).intValue()) >= this.commissionGoal(p)) {
             return false;
         }
         int after = before + 1;
-        d.set(countKey, PersistentDataType.INTEGER, (Object)after);
+        d.set(countKey, PersistentDataType.INTEGER, after);
         if (after == this.commissionGoal(p)) {
             this.depositMineralDust(p, 250L);
             return true;

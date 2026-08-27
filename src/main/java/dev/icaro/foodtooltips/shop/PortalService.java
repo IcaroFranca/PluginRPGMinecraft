@@ -330,7 +330,7 @@ implements Listener {
                 World world = Bukkit.getWorld((UUID)worldId);
                 if (world == null) continue;
                 Location loc = new Location(world, (double)y.getInt(raw + ".x"), (double)y.getInt(raw + ".y"), (double)y.getInt(raw + ".z"));
-                NamedTextColor color = (NamedTextColor)NamedTextColor.NAMES.value((Object)y.getString(raw + ".color", "light_purple"));
+                NamedTextColor color = (NamedTextColor)NamedTextColor.NAMES.value(y.getString(raw + ".color", "light_purple"));
                 String linked = y.getString(raw + ".link");
                 Portal portal = new Portal(id, owner, loc, y.getString(raw + ".name", "Portal"), color == null ? NamedTextColor.LIGHT_PURPLE : color, linked == null ? null : UUID.fromString(linked));
                 this.portals.put(id, portal);
@@ -345,13 +345,13 @@ implements Listener {
         YamlConfiguration y = new YamlConfiguration();
         for (Portal p : this.portals.values()) {
             String base = p.id.toString();
-            y.set(base + ".owner", (Object)p.owner.toString());
-            y.set(base + ".world", (Object)p.location.getWorld().getUID().toString());
-            y.set(base + ".x", (Object)p.location.getBlockX());
-            y.set(base + ".y", (Object)p.location.getBlockY());
-            y.set(base + ".z", (Object)p.location.getBlockZ());
-            y.set(base + ".name", (Object)p.name);
-            y.set(base + ".color", (Object)p.color.toString());
+            y.set(base + ".owner", p.owner.toString());
+            y.set(base + ".world", p.location.getWorld().getUID().toString());
+            y.set(base + ".x", p.location.getBlockX());
+            y.set(base + ".y", p.location.getBlockY());
+            y.set(base + ".z", p.location.getBlockZ());
+            y.set(base + ".name", p.name);
+            y.set(base + ".color", p.color.toString());
             y.set(base + ".link", p.link == null ? null : p.link.toString());
         }
         try {

@@ -37,12 +37,12 @@ public final class EconomyService {
     }
 
     public long balance(Player p) {
-        return (Long)p.getPersistentDataContainer().getOrDefault(this.coinsKey, PersistentDataType.LONG, (Object)0L);
+        return (Long)p.getPersistentDataContainer().getOrDefault(this.coinsKey, PersistentDataType.LONG, 0L);
     }
 
     public void deposit(Player p, long amount) {
         if (amount > 0L) {
-            p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, (Object)Math.addExact(this.balance(p), amount));
+            p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, Math.addExact(this.balance(p), amount));
         }
         this.updateBoard(p);
     }
@@ -52,13 +52,13 @@ public final class EconomyService {
         if (amount < 0L || balance < amount) {
             return false;
         }
-        p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, (Object)(balance - amount));
+        p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, (balance - amount));
         this.updateBoard(p);
         return true;
     }
 
     public void setBalance(Player p, long amount) {
-        p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, (Object)Math.max(0L, amount));
+        p.getPersistentDataContainer().set(this.coinsKey, PersistentDataType.LONG, Math.max(0L, amount));
         this.updateBoard(p);
     }
 

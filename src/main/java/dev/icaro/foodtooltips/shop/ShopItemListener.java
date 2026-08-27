@@ -150,7 +150,7 @@ implements Listener {
                 e.setCancelled(true);
                 ItemStack sword = p.getInventory().getItemInMainHand();
                 if (!sword.getType().name().endsWith("_SWORD")) break;
-                sword.editMeta(m -> m.getPersistentDataContainer().set(this.coated, PersistentDataType.BYTE, (Object)1));
+                sword.editMeta(m -> m.getPersistentDataContainer().set(this.coated, PersistentDataType.BYTE, 1));
                 this.consume(e.getItem());
                 p.sendMessage((Component)Component.text((String)"Wither aplicado permanentemente \u00e0 espada.", (TextColor)NamedTextColor.DARK_PURPLE));
                 break;
@@ -320,13 +320,12 @@ implements Listener {
         AbstractArrow arrow = (AbstractArrow)entity;
         ShopItem ammo = this.shop.type(e.getConsumable());
         if (ammo == ShopItem.ANCESTRAL_ARROW || ammo == ShopItem.SOLAR_ARROW) {
-            arrow.setMetadata("rpg_arrow", (MetadataValue)new FixedMetadataValue(this.plugin, (Object)ammo.name()));
+            arrow.setMetadata("rpg_arrow", (MetadataValue)new FixedMetadataValue(this.plugin, ammo.name()));
         }
     }
 
     @EventHandler(ignoreCancelled=true)
     public void projectile(ProjectileHitEvent e) {
-        Entity at;
         Projectile projectile = e.getEntity();
         if (projectile.hasMetadata("rpg_payload")) {
             Mob mob;
@@ -335,17 +334,17 @@ implements Listener {
             Player p;
             Player owner;
             ShopItem type = ShopItem.valueOf(((MetadataValue)projectile.getMetadata("rpg_payload").getFirst()).asString());
-            at = projectile.getLocation();
+            Location at = projectile.getLocation();
             ProjectileSource projectileSource = projectile.getShooter();
             Player player = owner = projectileSource instanceof Player ? (p = (Player)projectileSource) : null;
             if (type == ShopItem.METEOR && owner != null && this.protection.canBuild(owner, at.getBlock())) {
-                this.meteorAt(owner, (Location)at);
+                this.meteorAt(owner, at);
             } else if (type == ShopItem.BOMB) {
-                at.getWorld().createExplosion((Location)at, 3.5f, false, true, (Entity)owner);
+                at.getWorld().createExplosion(at, 3.5f, false, true, (Entity)owner);
             } else if (type == ShopItem.LIGHTNING_PRISON) {
-                ArrayList enemies = new ArrayList(at.getNearbyEntitiesByType(Enemy.class, 8.0));
+                ArrayList<Enemy> enemies = new ArrayList<>(at.getNearbyEntitiesByType(Enemy.class, 8.0));
                 for (int i = 0; i < 5; ++i) {
-                    Location strike = i < enemies.size() ? ((Enemy)enemies.get(i)).getLocation() : at.clone().add((Math.random() - 0.5) * 10.0, 0.0, (Math.random() - 0.5) * 10.0);
+                    Location strike = i < enemies.size() ? enemies.get(i).getLocation() : at.clone().add((Math.random() - 0.5) * 10.0, 0.0, (Math.random() - 0.5) * 10.0);
                     at.getWorld().strikeLightning(strike);
                 }
             } else if (type == ShopItem.BLEEDING_DAGGER && (entity = e.getHitEntity()) instanceof LivingEntity && (target = (LivingEntity)entity).getType() != EntityType.SKELETON && target.getType() != EntityType.WITHER_SKELETON) {
@@ -355,18 +354,17 @@ implements Listener {
             }
             projectile.remove();
         }
-        if (projectile.hasMetadata("rpg_arrow") && (at = e.getHitEntity()) instanceof LivingEntity) {
+        if (projectile.hasMetadata("rpg_arrow") && e.getHitEntity() instanceof LivingEntity target) {
             ProjectileSource projectileSource;
-            LivingEntity target = (LivingEntity)at;
             ShopItem type = ShopItem.valueOf(((MetadataValue)projectile.getMetadata("rpg_arrow").getFirst()).asString());
             if (type == ShopItem.ANCESTRAL_ARROW && !this.boss(target) && (projectileSource = projectile.getShooter()) instanceof Player) {
                 Player p = (Player)projectileSource;
                 target.damage(10.0, (Entity)p);
             }
             if (type == ShopItem.SOLAR_ARROW) {
-                target.getPersistentDataContainer().set(this.solarFire, PersistentDataType.BYTE, (Object)1);
+                target.getPersistentDataContainer().set(this.solarFire, PersistentDataType.BYTE, 1);
                 target.setFireTicks(40);
-                target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0.0, 1.0, 0.0), 30, 0.5, 0.5, 0.5, (Object)new Particle.DustOptions(Color.BLACK, 1.5f));
+                target.getWorld().spawnParticle(Particle.DUST, target.getLocation().add(0.0, 1.0, 0.0), 30, 0.5, 0.5, 0.5, new Particle.DustOptions(Color.BLACK, 1.5f));
             }
         }
     }
@@ -397,7 +395,7 @@ implements Listener {
         Snowball ball = (Snowball)p.launchProjectile(Snowball.class);
         ball.setItem(ItemStack.of((Material)type.icon()));
         ball.setVelocity(p.getEyeLocation().getDirection().multiply(1.6));
-        ball.setMetadata("rpg_payload", (MetadataValue)new FixedMetadataValue(this.plugin, (Object)type.name()));
+        ball.setMetadata("rpg_payload", (MetadataValue)new FixedMetadataValue(this.plugin, type.name()));
     }
 
     private List<LivingEntity> lineTargets(Player p, double range, double radius) {
@@ -482,7 +480,7 @@ implements Listener {
             for (LivingEntity living : world.getLivingEntities()) {
                 if (!living.getPersistentDataContainer().has(this.solarFire, PersistentDataType.BYTE)) continue;
                 living.setFireTicks(40);
-                living.getWorld().spawnParticle(Particle.DUST, living.getLocation().add(0.0, living.getHeight() * 0.6, 0.0), 6, 0.3, 0.4, 0.3, (Object)new Particle.DustOptions(Color.BLACK, 1.2f));
+                living.getWorld().spawnParticle(Particle.DUST, living.getLocation().add(0.0, living.getHeight() * 0.6, 0.0), 6, 0.3, 0.4, 0.3, new Particle.DustOptions(Color.BLACK, 1.2f));
             }
         }
     }

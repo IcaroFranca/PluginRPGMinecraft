@@ -67,7 +67,7 @@ extends JavaPlugin {
     public void onEnable() {
         this.saveDefaultConfig();
         if (this.getConfig().getInt("combat.max-level", 50) < 200) {
-            this.getConfig().set("combat.max-level", (Object)200);
+            this.getConfig().set("combat.max-level", 200);
             this.saveConfig();
         }
         PlayerStatsService stats = new PlayerStatsService((Plugin)this);
