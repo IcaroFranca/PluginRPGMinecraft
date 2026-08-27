@@ -15,9 +15,10 @@
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Matches the api-version declared in plugin.yml; adjust the paper-api
-         version below to the exact Paper build you compile/run against. -->
-    <paper.api.version>1.21.4-R0.1-SNAPSHOT</paper.api.version>
+    <!-- Matches the api-version declared in plugin.yml (Paper's post-1.21
+         calendar-based versioning: MC 26.2). Bump the build number to the
+         latest stable at https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/maven-metadata.xml -->
+    <paper.api.version>26.2.build.119-stable</paper.api.version>
   </properties>
 
   <repositories>

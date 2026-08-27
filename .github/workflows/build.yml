@@ -20,9 +20,6 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Discover latest paper-api version
-        run: curl -s https://repo.papermc.io/repository/maven-public/io/papermc/paper/paper-api/maven-metadata.xml
-
       - name: Build with Maven
         run: mvn -B package
 
