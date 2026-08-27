@@ -6,7 +6,6 @@ import dev.icaro.foodtooltips.skills.GeneralSkillService;
 import java.text.NumberFormat;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleConsumer;
 import net.kyori.adventure.text.Component;
@@ -80,14 +79,8 @@ public final class BuriedTreasureService {
             d.setTeleportDuration(2);
         });
         final Particle.DustOptions dust = new Particle.DustOptions(this.orbColor(rarity), rarity.ordinal() >= 3 ? 1.45f : 1.05f);
-        new BukkitRunnable(this){
+        new BukkitRunnable(){
             int age;
-            final /* synthetic */ BuriedTreasureService this$0;
-            {
-                BuriedTreasureService buriedTreasureService = this$0;
-                Objects.requireNonNull(buriedTreasureService);
-                this.this$0 = buriedTreasureService;
-            }
 
             public void run() {
                 if (!orb.isValid()) {
@@ -112,7 +105,7 @@ public final class BuriedTreasureService {
                 double distance = current.distance(target);
                 if (distance < 0.38 || this.age >= 50) {
                     orb.remove();
-                    this.this$0.deliver(p, rarity, reward, xpReward);
+                    BuriedTreasureService.this.deliver(p, rarity, reward, xpReward);
                     this.cancel();
                     return;
                 }

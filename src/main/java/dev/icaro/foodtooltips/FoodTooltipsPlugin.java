@@ -30,6 +30,9 @@ import dev.icaro.foodtooltips.skills.BackpackService;
 import dev.icaro.foodtooltips.skills.BedrockSwordThrowListener;
 import dev.icaro.foodtooltips.skills.CombatAbilityService;
 import dev.icaro.foodtooltips.skills.CombatSkillService;
+import dev.icaro.foodtooltips.skills.CombatTreeListener;
+import dev.icaro.foodtooltips.skills.CombatTreeMenuService;
+import dev.icaro.foodtooltips.skills.CombatValorService;
 import dev.icaro.foodtooltips.skills.GeneralSkillListener;
 import dev.icaro.foodtooltips.skills.GeneralSkillService;
 import dev.icaro.foodtooltips.skills.SetSkillLevelCommand;
@@ -70,7 +73,8 @@ extends JavaPlugin {
         PlayerStatsService stats = new PlayerStatsService((Plugin)this);
         CombatSkillService combat = new CombatSkillService((Plugin)this);
         GeneralSkillService general = new GeneralSkillService();
-        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat);
+        CombatValorService valor = new CombatValorService((Plugin)this);
+        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
         ShopService shop = new ShopService((Plugin)this, economy);
         BestiaryProgressService bestiaryProgress = new BestiaryProgressService((Plugin)this);
@@ -89,6 +93,8 @@ extends JavaPlugin {
         GlobalPresentationService presentation = new GlobalPresentationService((Plugin)this, global, levelColors, badgeRenderer);
         LevelColorMenuService levelColorMenu = new LevelColorMenuService(global, levelColors, badgeRenderer, presentation, menus::openMain);
         menus.levelColors(levelColorMenu);
+        CombatTreeMenuService treeMenu = new CombatTreeMenuService(combat, abilities, valor, menus::openMain);
+        menus.tree(treeMenu);
         global.onChange(p -> {
             presentation.refresh((Player)p);
             presentation.refreshAll();
@@ -99,12 +105,13 @@ extends JavaPlugin {
         pm.registerEvents((Listener)presentation, (Plugin)this);
         pm.registerEvents((Listener)levelColorMenu, (Plugin)this);
         pm.registerEvents((Listener)new SkillsListener(menus), (Plugin)this);
+        pm.registerEvents((Listener)new CombatTreeListener(treeMenu), (Plugin)this);
         pm.registerEvents((Listener)new BackpackListener(this.backpacks, menus), (Plugin)this);
         pm.registerEvents((Listener)new GeneralSkillListener((Plugin)this, general, this.progressBar, global), (Plugin)this);
         pm.registerEvents((Listener)gems, (Plugin)this);
         pm.registerEvents((Listener)new MiningMenuListener(mining, menus, gems), (Plugin)this);
         pm.registerEvents((Listener)new BestiaryListener(bestiary), (Plugin)this);
-        pm.registerEvents((Listener)new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global), (Plugin)this);
+        pm.registerEvents((Listener)new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
@@ -192,9 +199,14 @@ extends JavaPlugin {
         });
         StatsHudService hud = new StatsHudService(this.getConfig().getString("hud.spacing", "     "));
         long ticks = Math.max(1L, this.getConfig().getLong("hud.update-ticks", 5L));
-        double regen = this.getConfig().getDouble("stats.mana-regeneration-per-second", 2.0) * (double)ticks / 20.0;
+        double manaRegen = this.getConfig().getDouble("stats.mana-regeneration-per-second", 2.0) * (double)ticks / 20.0;
+        double vitalityRegen = this.getConfig().getDouble("stats.vitality-regeneration-per-second", 4.0) * (double)ticks / 20.0;
+        double naturalHealthRegenPerSecond = this.getConfig().getDouble("stats.natural-health-regen-per-second", 0.5);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, () -> this.getServer().getOnlinePlayers().forEach(p -> {
-            stats.regen((Player)p, regen);
+            stats.regen((Player)p, manaRegen);
+            stats.regenVitality((Player)p, vitalityRegen);
+            double healthRegenMultiplier = stats.stats((Player)p).healthRegen() / 100.0;
+            stats.regenHealth((Player)p, naturalHealthRegenPerSecond * healthRegenMultiplier * (double)ticks / 20.0);
             hud.show((Player)p, stats.stats((Player)p));
         }), 1L, ticks);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, this.visuals::tick, 1L, Math.max(1L, this.getConfig().getLong("mob-visuals.update-ticks", 3L)));
@@ -205,6 +217,7 @@ extends JavaPlugin {
         }
         this.getServer().getOnlinePlayers().forEach(p -> {
             combat.applyAttackSpeed((Player)p);
+            stats.applySwingRange((Player)p);
             bestiaryProgress.applyBonusHealth((Player)p);
             global.migrate((Player)p);
             foodListener.refresh((Player)p);

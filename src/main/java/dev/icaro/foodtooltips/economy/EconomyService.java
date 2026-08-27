@@ -2,7 +2,6 @@ package dev.icaro.foodtooltips.economy;
 
 import dev.icaro.foodtooltips.bestiary.BestiaryCatalog;
 import dev.icaro.foodtooltips.i18n.Language;
-import dev.icaro.foodtooltips.skills.CombatAbility;
 import dev.icaro.foodtooltips.skills.CombatAbilityService;
 import java.text.NumberFormat;
 import java.util.HashMap;
@@ -67,8 +66,9 @@ public final class EconomyService {
         double hp = Optional.ofNullable(mob.getAttribute(Attribute.MAX_HEALTH)).map(x -> x.getValue()).orElse(10.0);
         int fallback = Math.max(1, (int)Math.round(Math.sqrt(hp) * 1.5));
         int base = BestiaryCatalog.find(mob.getType()).map(e -> this.catalogCoins(e.type(), e.awardedCombatXp())).orElse(fallback);
-        if (this.abilities.enabled(p, CombatAbility.TREASURE_HUNTER)) {
-            base = Math.max(1, (int)Math.round((double)base * 1.25));
+        double bonus = this.abilities.treasureHunterBonus(p);
+        if (bonus > 0.0) {
+            base = Math.max(1, (int)Math.round((double)base * (1.0 + bonus)));
         }
         return base;
     }

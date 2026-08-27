@@ -6,7 +6,6 @@ import dev.icaro.foodtooltips.skills.CombatAbilityService;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -66,7 +65,7 @@ implements Listener {
             p.sendActionBar((Component)Component.text((String)(Language.of(p).choose("Arremesso em recarga: ", "Sword Throw cooldown: ") + String.format(Locale.US, "%.1fs", (double)(ready - now) / 1000.0)), (TextColor)NamedTextColor.RED));
             return true;
         }
-        long cooldown = this.abilities.enabled(p, CombatAbility.APEX_WARRIOR) ? 10000L : (this.abilities.enabled(p, CombatAbility.COMBAT_MASTERY) ? 15000L : 30000L);
+        long cooldown = this.abilities.swordThrowCooldownMillis(p);
         this.cooldowns.put(p.getUniqueId(), now + cooldown);
         this.launch(p, sword);
         return true;
@@ -83,13 +82,9 @@ implements Listener {
             d.setBillboard(Display.Billboard.FIXED);
             d.setViewRange(0.5f);
         });
-        new BukkitRunnable(this){
+        new BukkitRunnable(){
             int ticks;
-            Location at;
-            {
-                Objects.requireNonNull(this$0);
-                this.at = start.clone();
-            }
+            Location at = start.clone();
 
             public void run() {
                 Entity entity2;
@@ -102,7 +97,7 @@ implements Listener {
                 if (hit != null && (entity2 = hit.getHitEntity()) instanceof LivingEntity) {
                     LivingEntity target = (LivingEntity)entity2;
                     AttributeInstance attack = p.getAttribute(Attribute.ATTACK_DAMAGE);
-                    target.damage((attack == null ? 1.0 : attack.getValue()) * 0.5, (Entity)p);
+                    target.damage((attack == null ? 1.0 : attack.getValue()) * SwordThrowListener.this.abilities.swordThrowDamageFraction(p), (Entity)p);
                     this.finish();
                     return;
                 }
