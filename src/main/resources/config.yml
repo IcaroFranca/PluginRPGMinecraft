@@ -85,3 +85,9 @@ global-level:
   telekinesis-level: 3
   telekinesis-radius: 3.0
   strength-damage-percent-per-point: 1.0
+  # Custom player-head texture for the Global Level icon in /skills. Leave blank to use
+  # the default fallback icon (an experience bottle). To set a custom head: find one on
+  # a site like minecraft-heads.com and paste the base64 "Value" it gives you (the same
+  # kind of string used in /give ... player_head[profile={properties:[{name:"textures",
+  # value:"..."}]}] commands).
+  icon-texture: ""

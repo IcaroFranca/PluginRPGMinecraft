@@ -1,11 +1,14 @@
 package dev.icaro.foodtooltips.global;
 
+import dev.icaro.foodtooltips.bestiary.BestiaryCatalog;
+import dev.icaro.foodtooltips.bestiary.BestiaryEntry;
 import dev.icaro.foodtooltips.bestiary.BestiaryProgressService;
 import dev.icaro.foodtooltips.global.GlobalLevelRules;
 import dev.icaro.foodtooltips.global.GlobalLevelSnapshot;
 import dev.icaro.foodtooltips.global.GlobalSkill;
 import dev.icaro.foodtooltips.global.GlobalXpSource;
 import dev.icaro.foodtooltips.i18n.Language;
+import dev.icaro.foodtooltips.mining.MiningCatalog;
 import dev.icaro.foodtooltips.skills.CombatSkillService;
 import dev.icaro.foodtooltips.skills.GeneralSkillService;
 import dev.icaro.foodtooltips.skills.SkillType;
@@ -41,6 +44,7 @@ public final class GlobalLevelService {
     private final long[] skillRewards;
     private final int telekinesisLevel;
     private final double telekinesisRadiusBlocks;
+    private final String iconTexture;
     private Consumer<Player> changeListener = p -> {};
 
     public GlobalLevelService(Plugin plugin, CombatSkillService combat, GeneralSkillService general, BestiaryProgressService bestiary) {
@@ -60,6 +64,35 @@ public final class GlobalLevelService {
         this.skillRewards = new long[]{this.reward("level-1-10", 5L), this.reward("level-11-25", 10L), this.reward("level-26-50", 20L), this.reward("level-51-60", 30L), this.reward("level-61-100", 40L), this.reward("level-101-150", 50L), this.reward("level-151-200", 60L)};
         this.telekinesisLevel = Math.max(1, plugin.getConfig().getInt("global-level.telekinesis-level", 3));
         this.telekinesisRadiusBlocks = Math.max(0.0, plugin.getConfig().getDouble("global-level.telekinesis-radius", 3.0));
+        this.iconTexture = plugin.getConfig().getString("global-level.icon-texture", "");
+    }
+
+    /**
+     * Custom player-head texture for the Global Level icon (a texture URL from
+     * textures.minecraft.net, or the base64 "Value" some head sites hand out), or blank
+     * to use the default fallback icon. Set via {@code global-level.icon-texture}.
+     */
+    public String iconTexture() {
+        return this.iconTexture;
+    }
+
+    /**
+     * The highest Global Level actually reachable given every XP source currently in the
+     * game: Combat and every general skill maxed, plus every Bestiary and Mining
+     * milestone claimed. Used to size the Global Level browser instead of an arbitrary cap.
+     */
+    public long maxAchievableLevel() {
+        long xp = GlobalLevelRules.skillReward(1, this.combat.maxLevel(), this.skillRewards);
+        for (SkillType type : SkillType.values()) {
+            xp = Math.addExact(xp, GlobalLevelRules.skillReward(1, this.general.maxLevel(), this.skillRewards));
+        }
+        int milestones = 0;
+        for (BestiaryEntry entry : BestiaryCatalog.entries()) {
+            milestones += this.bestiary.maxMilestones(entry.type());
+        }
+        milestones += MiningCatalog.entries().size() * GeneralSkillService.maxMiningMilestonesPerBlock();
+        xp = Math.addExact(xp, Math.multiplyExact((long) milestones, this.milestoneXp));
+        return GlobalLevelRules.level(xp, this.xpPerLevel);
     }
 
     /** Global Level required to unlock Telekinesis, the universal "drops come to you" perk. */

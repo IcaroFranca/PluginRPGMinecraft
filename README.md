@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.25.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.26.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.25.0` → `0.25.1`) para correções e
-ajustes pequenos; minor (`0.25.0` → `0.26.0`) para features novas como a
+os dois precisam bater. Patch (`0.26.0` → `0.26.1`) para correções e
+ajustes pequenos; minor (`0.26.0` → `0.27.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
@@ -173,3 +173,30 @@ Fortune de Mineração/Agricultura/Coleta com os mesmos ícones do menu principa
 e as 4 peças de armadura que o jogador tem equipadas (capacete, peitoral,
 calças, botas) mostradas como os itens reais — nome, encantos e tudo — lidas
 direto de `Player#getInventory()`; um slot vazio mostra "Nada equipado."
+
+## Reorganização do menu de Skills
+
+O menu principal (`/skills`, `SkillsMenuService#openMain`) agora mostra
+*só* a cabeça de status (slot 4) e os ícones de skill (Combate + as 6 gerais
++ Nível Global): Bestiário e Árvore de Combate deixaram de ter botão aqui —
+só são acessíveis pela tela de Combate (`openCombat`, que já os tinha nos
+slots 39/41); Bestiário continua alcançável também via `/bestiary`. Mochilas,
+Cores do Nível e Loja continuam com botão no menu principal (removê-los
+deixaria Mochilas sem nenhuma forma de acesso, já que não tem comando
+próprio — Loja e Cores do Nível têm `/shop` e `/levelcolor`).
+
+**Nível Global virou um ícone de skill**: em vez do botão separado que
+tinha, agora fica no slot 13 (centralizado, logo abaixo da cabeça de status),
+como se fosse mais uma skill. O ícone é uma cabeça customizada configurável
+em `global-level.icon-texture` (cole o "Value" base64 de um custom head, por
+exemplo do minecraft-heads.com); sem essa config, cai no ícone padrão (frasco
+de experiência). A cabeça de overview dentro de "Status & Equipamento"
+também foi enxugada — mostra só o Nível Global, sem Progresso/Nível de
+Combate/Telecinese (essas informações já vivem na tela de Combate e na
+própria tela de Nível Global).
+
+**Tela de Nível Global mostra até o nível máximo real**: em vez de um limite
+fixo arbitrário, `GlobalLevelService#maxAchievableLevel()` calcula o Nível
+Global mais alto realmente alcançável — Combate e as 6 skills gerais todas no
+nível 200, mais toda milestone de Bestiário e de Mineração reivindicada — e
+usa esse número pra paginar a tela até lá.

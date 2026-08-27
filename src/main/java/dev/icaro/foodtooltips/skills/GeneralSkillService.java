@@ -16,6 +16,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 public final class GeneralSkillService {
     private static final int MAX_LEVEL = 200;
+    private static final int[] MINING_MILESTONE_THRESHOLDS = {25, 100, 250, 500, 1000};
 
     public SkillProgress progress(Player p, SkillType type) {
         int level = (Integer)p.getPersistentDataContainer().getOrDefault(this.key(type, "level"), PersistentDataType.INTEGER, 0);
@@ -120,11 +121,16 @@ public final class GeneralSkillService {
     public int miningMilestones(Player p, Material block) {
         int count = this.mined(p, block);
         int done = 0;
-        for (int n : new int[]{25, 100, 250, 500, 1000}) {
+        for (int n : MINING_MILESTONE_THRESHOLDS) {
             if (count < n) continue;
             ++done;
         }
         return done;
+    }
+
+    /** How many milestone tiers a single ore/block type can reach (used to size Global Level's max-achievable-level estimate). */
+    public static int maxMiningMilestonesPerBlock() {
+        return MINING_MILESTONE_THRESHOLDS.length;
     }
 
     public double carefulChance(Player p) {

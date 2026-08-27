@@ -1,5 +1,7 @@
 package dev.icaro.foodtooltips.skills;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import dev.icaro.foodtooltips.global.GlobalLevelService;
 import dev.icaro.foodtooltips.global.GlobalLevelSnapshot;
 import dev.icaro.foodtooltips.global.LevelColorMenuService;
@@ -31,13 +33,6 @@ import org.bukkit.inventory.meta.SkullMeta;
 public final class SkillsMenuService {
     private static final int[] N = new int[]{9, 18, 27, 28, 29, 20, 11, 2, 3, 4, 13, 22, 31, 32, 33, 24, 15, 6, 7, 8, 17, 26, 35, 44, 53};
     private static final Map<Integer, SkillType> S = Map.of(22, SkillType.FARMING, 24, SkillType.FISHING, 30, SkillType.MINING, 31, SkillType.FORAGING, 32, SkillType.ENCHANTING, 33, SkillType.ALCHEMY);
-    /**
-     * Global Level is XP-based and uncapped in practice, but its rewards (HP every
-     * level, Strength every {@code levelsPerStrength} levels, the Telekinesis unlock)
-     * repeat the same simple pattern forever, so the browser only needs to go this far
-     * to show every distinct kind of reward at least once.
-     */
-    private static final int GLOBAL_MENU_MAX_LEVEL = 100;
 
     private final CombatSkillService combat;
     private final GeneralSkillService general;
@@ -71,6 +66,11 @@ public final class SkillsMenuService {
         this.tree = tree;
     }
 
+    /**
+     * Bestiário and Árvore de Combate are deliberately NOT buttons here — they live only
+     * on the Combat skill screen ({@link #openCombat}), reachable from the Combat icon
+     * below (Bestiário is also reachable via {@code /bestiary}).
+     */
     public void openMain(Player p) {
         Language l = Language.of(p);
         Inventory v = this.inv(l.choose("Habilidades", "Skills"));
@@ -80,15 +80,13 @@ public final class SkillsMenuService {
             SkillType t = e.getValue();
             v.setItem(e.getKey(), this.item(t.icon(), t.name(l == Language.PT), List.of(this.skillLine(p, t, l), this.click(l))));
         }
+        v.setItem(13, this.globalLevelIcon(p, l));
         if (this.backpacks != null) {
             v.setItem(46, this.backpacks.menuIcon(l.choose("Mochilas", "Backpacks"), List.of(this.text(l.choose("Mochilas de todas as skills.", "Backpacks for every skill."), NamedTextColor.YELLOW))));
         }
         if (this.levelColors != null) {
             v.setItem(47, this.item(Material.NAME_TAG, l.choose("Cores do Nível", "Level Colors"), List.of(this.click(l))));
         }
-        v.setItem(48, this.item(Material.COMPARATOR, l.choose("Árvore de Combate", "Combat Tree"), List.of(this.click(l))));
-        v.setItem(49, this.item(Material.KNOWLEDGE_BOOK, l.choose("Bestiário", "Bestiary"), List.of(this.click(l))));
-        v.setItem(50, this.item(Material.NETHER_STAR, l.choose("Nível Global", "Global Level"), List.of(this.globalLine(p, l), this.click(l))));
         v.setItem(51, this.item(Material.EMERALD, l.choose("Loja", "Shop"), List.of(this.click(l))));
         this.open(p, v, new View(Type.MAIN, 0, null));
     }
@@ -153,7 +151,8 @@ public final class SkillsMenuService {
     }
 
     public void openGlobal(Player p, int page) {
-        page = this.clamp(page, GLOBAL_MENU_MAX_LEVEL);
+        int maxLevel = (int) Math.max(1L, Math.min(Integer.MAX_VALUE, this.global.maxAchievableLevel()));
+        page = this.clamp(page, maxLevel);
         Language l = Language.of(p);
         Inventory v = this.inv(l.choose("Nível Global", "Global Level"));
         GlobalLevelSnapshot g = this.global.snapshot(p);
@@ -178,7 +177,7 @@ public final class SkillsMenuService {
             v.setItem(N[i], this.node(level, currentLevel, l, lore));
         }
         v.setItem(0, this.item(Material.NETHER_STAR, l.choose("Progressão de Nível Global", "Global Level Progression"), List.of(this.globalLine(p, l))));
-        this.nav(v, l, page, GLOBAL_MENU_MAX_LEVEL);
+        this.nav(v, l, page, maxLevel);
         this.open(p, v, new View(Type.GLOBAL, page, null));
     }
 
@@ -191,6 +190,8 @@ public final class SkillsMenuService {
             case MAIN -> {
                 if (slot == 4) {
                     this.openStats(p);
+                } else if (slot == 13) {
+                    this.openGlobal(p, 0);
                 } else if (slot == 20) {
                     this.openCombat(p, 0);
                 } else if (S.containsKey(slot)) {
@@ -201,13 +202,6 @@ public final class SkillsMenuService {
                 } else if (slot == 47 && this.levelColors != null) {
                     this.views.remove(p.getUniqueId());
                     this.levelColors.open(p);
-                } else if (slot == 48 && this.tree != null) {
-                    this.views.remove(p.getUniqueId());
-                    this.tree.open(p);
-                } else if (slot == 49) {
-                    p.performCommand("bestiary");
-                } else if (slot == 50) {
-                    this.openGlobal(p, 0);
                 } else if (slot == 51) {
                     p.performCommand("shop");
                 }
@@ -308,6 +302,34 @@ public final class SkillsMenuService {
         return this.text(l.choose("Nível ", "Level ") + g.level() + " • " + g.progress() + "/" + g.required() + " XP", NamedTextColor.GOLD);
     }
 
+    /** Global Level's button on the main skills grid — a custom head if one is configured, otherwise an XP bottle. */
+    private ItemStack globalLevelIcon(Player p, Language l) {
+        List<Component> lore = List.of(this.globalLine(p, l), this.click(l));
+        String texture = this.global.iconTexture();
+        if (texture != null && !texture.isBlank()) {
+            return this.customHead(texture, l.choose("Nível Global", "Global Level"), lore);
+        }
+        return this.item(Material.EXPERIENCE_BOTTLE, l.choose("Nível Global", "Global Level"), lore);
+    }
+
+    /** A player head wearing a custom skin (base64 "Value" texture), falling back to a plain head if it's bad. */
+    private ItemStack customHead(String texture, String name, List<Component> lore) {
+        ItemStack i = ItemStack.of(Material.PLAYER_HEAD);
+        SkullMeta m = (SkullMeta) i.getItemMeta();
+        try {
+            PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
+            profile.setProperty(new ProfileProperty("textures", texture));
+            m.setPlayerProfile(profile);
+        } catch (Exception ignored) {
+            // Bad texture value: fall back to a plain player head rather than failing the whole menu.
+        }
+        m.displayName(this.text(name, NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
+        m.lore(lore.stream().map(c -> c.decoration(TextDecoration.ITALIC, false)).toList());
+        m.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        i.setItemMeta(m);
+        return i;
+    }
+
     private Component skillLine(Player p, SkillType t, Language l) {
         SkillProgress x = this.general.progress(p, t);
         return this.text(l.choose("Nível ", "Level ") + x.level() + (x.level() >= this.general.maxLevel() ? " (MAX)" : " • " + Math.round(x.xp()) + "/" + Math.round(x.requiredXp()) + " XP"), NamedTextColor.GREEN);
@@ -387,15 +409,7 @@ public final class SkillsMenuService {
 
     private ItemStack statsOverviewHead(Player p, Language l) {
         GlobalLevelSnapshot g = this.global.snapshot(p);
-        CombatProgress c = this.combat.progress(p);
-        List<Component> lore = List.of(
-                this.text("✦ " + l.choose("Nível Global: ", "Global Level: ") + g.level(), NamedTextColor.GOLD),
-                this.text(l.choose("Progresso: ", "Progress: ") + g.progress() + "/" + g.required() + " XP", NamedTextColor.YELLOW),
-                this.text(l.choose("Nível de Combate: ", "Combat Level: ") + c.level(), NamedTextColor.GREEN),
-                this.text(this.global.telekinesisUnlocked(p)
-                        ? "🧲 " + l.choose("Telecinese: LIBERADA", "Telekinesis: UNLOCKED")
-                        : "🧲 " + l.choose("Telecinese: bloqueada (Nível Global ", "Telekinesis: locked (Global Level ") + this.global.telekinesisRequiredLevel() + (l == Language.PT ? ")" : " required)"),
-                        this.global.telekinesisUnlocked(p) ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+        List<Component> lore = List.of(this.text("✦ " + l.choose("Nível Global: ", "Global Level: ") + g.level(), NamedTextColor.GOLD));
         ItemStack i = this.item(Material.PLAYER_HEAD, p.getName(), lore);
         SkullMeta m = (SkullMeta) i.getItemMeta();
         m.setOwningPlayer((OfflinePlayer) p);
