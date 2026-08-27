@@ -6,6 +6,7 @@ import dev.icaro.foodtooltips.bestiary.BestiaryEntry;
 import dev.icaro.foodtooltips.bestiary.BestiaryProgressService;
 import dev.icaro.foodtooltips.economy.EconomyService;
 import dev.icaro.foodtooltips.i18n.Language;
+import dev.icaro.foodtooltips.skills.CombatValorService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,11 +31,13 @@ public final class BestiaryMenuService {
     private static final int PAGE_SIZE = 45;
     private final BestiaryProgressService progress;
     private final EconomyService economy;
+    private final CombatValorService valor;
     private final Map<UUID, View> viewers = new HashMap<UUID, View>();
 
-    public BestiaryMenuService(BestiaryProgressService p, EconomyService e) {
+    public BestiaryMenuService(BestiaryProgressService p, EconomyService e, CombatValorService valor) {
         this.progress = p;
         this.economy = e;
+        this.valor = valor;
     }
 
     public void openCategories(Player p) {
@@ -149,6 +152,7 @@ public final class BestiaryMenuService {
         lore.add((Component)Component.text((String)("Milestones: " + this.progress.achieved(p, e.type())), (TextColor)NamedTextColor.GOLD));
         lore.add((Component)Component.text((String)("Combat XP: " + e.awardedCombatXp()), (TextColor)NamedTextColor.RED));
         lore.add((Component)Component.text((String)(l.choose("Moedas: ", "Coins: ") + this.economy.catalogCoins(e.type(), e.awardedCombatXp()) + " \u26c3"), (TextColor)NamedTextColor.YELLOW));
+        lore.add((Component)Component.text((String)("\ud83e\ude78 " + l.choose("Pontos de Sangue: ", "Blood Points: ") + this.valor.catalogValor(e)), (TextColor)NamedTextColor.DARK_RED));
         lore.add((Component)Component.text((String)(l.choose("Orbes de XP: ", "XP Orbs: ") + e.orbXp()), (TextColor)NamedTextColor.GREEN));
         lore.add((Component)Component.empty());
         lore.add((Component)Component.text((String)l.choose("Drops (chance base):", "Drops (base chance):"), (TextColor)NamedTextColor.GOLD));

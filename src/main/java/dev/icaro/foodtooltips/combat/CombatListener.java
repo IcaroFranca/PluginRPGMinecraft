@@ -24,11 +24,13 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Enemy;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -194,6 +196,10 @@ public final class CombatListener implements Listener {
         }
         if (this.abilities.enabled(p, CombatAbility.TELEKINESIS)) {
             this.collectDrops(p, e);
+            double radius = this.abilities.telekinesisMagnetRadius(p);
+            if (radius > 0.0) {
+                this.sweepNearbyDrops(p, e.getEntity().getLocation(), radius);
+            }
         }
     }
 
@@ -289,6 +295,23 @@ public final class CombatListener implements Listener {
         }
     }
 
+    /** Telekinesis: sweeps loose dropped items (not just the kill's own drops) within radius into the player's inventory. */
+    private void sweepNearbyDrops(Player p, Location center, double radius) {
+        if (center.getWorld() == null) {
+            return;
+        }
+        for (Entity nearby : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
+            if (!(nearby instanceof Item item) || !item.isValid()) {
+                continue;
+            }
+            ItemStack stack = item.getItemStack();
+            for (ItemStack overflow : p.getInventory().addItem(stack).values()) {
+                p.getWorld().dropItemNaturally(p.getLocation(), overflow);
+            }
+            item.remove();
+        }
+    }
+
     private boolean hostile(Entity damager) {
         if (damager instanceof Enemy) {
             return true;
@@ -320,13 +343,7 @@ public final class CombatListener implements Listener {
         p.sendMessage(Component.text("+" + (double) (newLevel - oldLevel) * 0.5 + "% Crit Chance • +" + (newLevel - oldLevel) * 4 + "% " + l.choose("Dano", "Damage"), NamedTextColor.AQUA));
         p.sendMessage(Component.text("+" + globalXp + " " + l.choose("XP de Nível Global", "Global Level XP"), NamedTextColor.AQUA));
         if (bonusValor > 0L) {
-            p.sendMessage(Component.text("❖ +" + this.valor.format(bonusValor) + " " + l.choose("Cristais de Combate", "Combat Crystals"), NamedTextColor.LIGHT_PURPLE));
-        }
-        for (CombatAbility ability : CombatAbility.values()) {
-            if (ability.level() <= oldLevel || ability.level() > newLevel) {
-                continue;
-            }
-            p.sendMessage(Component.text(l.choose("Elegível na Árvore de Habilidades: ", "Eligible in the Ability Tree: ") + ability.name(l == Language.PT), NamedTextColor.LIGHT_PURPLE));
+            p.sendMessage(Component.text("🩸 +" + this.valor.format(bonusValor) + " " + l.choose("Pontos de Sangue", "Blood Points"), NamedTextColor.DARK_RED));
         }
         p.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━", NamedTextColor.DARK_GRAY));
     }

@@ -29,14 +29,14 @@ import org.bukkit.inventory.meta.SkullMeta;
  * every {@link CombatAbility} at the slot defined by its {@link
  * CombatTreeNode}, with branches read top (capstone) to bottom (roots).
  *
- * <p>Left click unlocks/upgrades a node (spends Combat Crystals). Shift-click toggles
+ * <p>Left click unlocks/upgrades a node (spends Blood Points). Shift-click toggles
  * an unlocked passive on/off. Right click casts a menu-triggered active
  * ability (Arcane Slash, Vital Touch).
  */
 public final class CombatTreeMenuService {
     private static final int BACK_SLOT = 8;
     private static final int HEADER_SLOT = 0;
-    private static final String CURRENCY_SYMBOL = "❖";
+    private static final String CURRENCY_SYMBOL = "🩸";
     private static final Map<Integer, CombatAbility> SLOT_TO_ABILITY = buildSlotMap();
 
     private final CombatSkillService combat;
@@ -136,9 +136,8 @@ public final class CombatTreeMenuService {
         switch (result) {
             case SUCCESS -> p.sendActionBar(this.text("✦ " + ability.name(l == Language.PT) + " " + l.choose("melhorada!", "upgraded!") + " (" + this.abilities.rank(p, ability) + "/" + this.abilities.maxRank(ability) + ")", NamedTextColor.GREEN));
             case ALREADY_MAX -> p.sendActionBar(this.text(l.choose("Já está no rank máximo.", "Already at max rank."), NamedTextColor.GRAY));
-            case LEVEL_TOO_LOW -> p.sendActionBar(this.text(l.choose("Nível de Combate insuficiente: requer ", "Combat level too low: requires ") + ability.level(), NamedTextColor.RED));
             case PREREQUISITE_MISSING -> p.sendActionBar(this.text(l.choose("Desbloqueie os pré-requisitos primeiro.", "Unlock the prerequisites first."), NamedTextColor.RED));
-            case INSUFFICIENT_VALOR -> p.sendActionBar(this.text(l.choose("Cristais de Combate insuficientes.", "Not enough Combat Crystals."), NamedTextColor.RED));
+            case INSUFFICIENT_VALOR -> p.sendActionBar(this.text(l.choose("Pontos de Sangue insuficientes.", "Not enough Blood Points."), NamedTextColor.RED));
         }
     }
 
@@ -147,8 +146,8 @@ public final class CombatTreeMenuService {
         long balance = this.valor.balance(p);
         List<Component> lore = List.of(
                 this.text(l.choose("Nível de Combate: ", "Combat Level: ") + level, NamedTextColor.GREEN),
-                this.text(CURRENCY_SYMBOL + " " + l.choose("Cristais de Combate: ", "Combat Crystals: ") + this.valor.format(balance), NamedTextColor.LIGHT_PURPLE),
-                this.text(l.choose("Ganhe matando mobs hostis e ao subir de nível de Combate.", "Earn them by killing hostile mobs and leveling up Combat."), NamedTextColor.GRAY),
+                this.text(CURRENCY_SYMBOL + " " + l.choose("Pontos de Sangue: ", "Blood Points: ") + this.valor.format(balance), NamedTextColor.DARK_RED),
+                this.text(l.choose("Ganhe matando mobs hostis (veja o Bestiário) e ao subir de nível de Combate.", "Earn them by killing hostile mobs (see the Bestiary) and leveling up Combat."), NamedTextColor.GRAY),
                 Component.empty(),
                 this.text(l.choose("🔒 Carvão: bloqueada", "🔒 Coal: locked"), NamedTextColor.DARK_GRAY),
                 this.text(l.choose("✔ Esmeralda: desbloqueada", "✔ Emerald: unlocked"), NamedTextColor.GREEN),
@@ -182,9 +181,8 @@ public final class CombatTreeMenuService {
         int max = this.abilities.maxRank(ability);
         boolean unlocked = rank > 0;
         boolean maxed = rank >= max;
-        boolean levelOk = this.abilities.levelEligible(p, ability);
         boolean prereqOk = this.abilities.prerequisitesMet(p, ability);
-        boolean purchasable = !maxed && levelOk && prereqOk;
+        boolean purchasable = !maxed && prereqOk;
         boolean active = node.kind() != CombatTreeNode.Kind.PASSIVE;
 
         NamedTextColor nameColor = maxed ? NamedTextColor.GOLD : unlocked ? NamedTextColor.GREEN : purchasable ? NamedTextColor.YELLOW : NamedTextColor.GRAY;
@@ -200,12 +198,11 @@ public final class CombatTreeMenuService {
                 lore.add(this.text((ok ? "✔ " : "✖ ") + l.choose("Requer: ", "Requires: ") + prereq.name(l == Language.PT), ok ? NamedTextColor.DARK_GREEN : NamedTextColor.RED));
             }
         }
-        lore.add(this.text((levelOk ? "✔ " : "✖ ") + l.choose("Nível de Combate ", "Combat Level ") + ability.level(), levelOk ? NamedTextColor.DARK_GREEN : NamedTextColor.RED));
         if (maxed) {
             lore.add(this.text(l.choose("RANK MÁXIMO", "MAX RANK"), NamedTextColor.GOLD));
         } else {
             long cost = this.abilities.nextRankCost(p, ability);
-            lore.add(this.text(CURRENCY_SYMBOL + " " + (unlocked ? l.choose("Melhorar: ", "Upgrade: ") : l.choose("Desbloquear: ", "Unlock: ")) + this.valor.format(cost) + " " + l.choose("Cristais", "Crystals"), NamedTextColor.LIGHT_PURPLE));
+            lore.add(this.text(CURRENCY_SYMBOL + " " + (unlocked ? l.choose("Melhorar: ", "Upgrade: ") : l.choose("Desbloquear: ", "Unlock: ")) + this.valor.format(cost) + " " + l.choose("Pontos de Sangue", "Blood Points"), NamedTextColor.DARK_RED));
         }
         if (unlocked && node.kind() == CombatTreeNode.Kind.PASSIVE) {
             boolean enabled = this.abilities.enabled(p, ability);

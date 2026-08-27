@@ -35,13 +35,20 @@ combat:
   hostile-xp-health-multiplier: 2.0
   hostile-xp-level-multiplier: 3.0
 combat-tree:
-  # Valor is the currency spent in the Combat Ability Tree to unlock and upgrade nodes.
-  # Cost of rank N (1-indexed) = base-unlock-cost + cost-per-rank * (N - 1).
-  base-unlock-cost: 40
-  cost-per-rank: 25
-  # Valor earned per hostile kill ~= sqrt(mob max health) * this multiplier (min 1).
+  # Blood Points are the currency spent in the Combat Ability Tree to unlock and upgrade nodes.
+  # Every node's rank-1 cost and per-rank cost scale with its tier (how deep it sits in the
+  # tree, tier 1 = root): tierBase = base-unlock-cost + cost-per-tier * (tier - 1);
+  # tierPerRank = cost-per-rank + cost-per-rank-per-tier * (tier - 1);
+  # cost of rank N (1-indexed) = tierBase + tierPerRank * (N - 1).
+  base-unlock-cost: 20
+  cost-per-tier: 15
+  cost-per-rank: 8
+  cost-per-rank-per-tier: 5
+  # Fallback Blood Points earned per hostile kill when the mob has no Bestiary entry,
+  # ~= sqrt(mob max health) * this multiplier (min 1). Mobs with a Bestiary entry instead
+  # drop the exact amount shown in the Bestiary (see BestiaryCatalog's combatXp / 10).
   valor-per-kill-multiplier: 0.3
-  # Bonus Valor awarded per Combat level gained.
+  # Bonus Blood Points awarded per Combat level gained.
   valor-per-level: 3
 mob-visuals:
   # Text Display view range uses 64-block units: 0.25 = approximately 16 blocks.

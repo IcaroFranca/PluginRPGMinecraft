@@ -74,7 +74,7 @@ extends JavaPlugin {
         CombatSkillService combat = new CombatSkillService((Plugin)this);
         GeneralSkillService general = new GeneralSkillService();
         CombatValorService valor = new CombatValorService((Plugin)this);
-        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
+        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, stats, valor);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
         ShopService shop = new ShopService((Plugin)this, economy);
         BestiaryProgressService bestiaryProgress = new BestiaryProgressService((Plugin)this);
@@ -85,7 +85,7 @@ extends JavaPlugin {
         SkillsMenuService menus = new SkillsMenuService(combat, general, stats, abilities, mining, global);
         this.backpacks = new BackpackService((Plugin)this, combat, general);
         menus.backpacks(this.backpacks);
-        BestiaryMenuService bestiary = new BestiaryMenuService(bestiaryProgress, economy);
+        BestiaryMenuService bestiary = new BestiaryMenuService(bestiaryProgress, economy, valor);
         this.progressBar = new SkillProgressBarService((Plugin)this);
         this.visuals = new MobVisualService((Plugin)this);
         LevelColorService levelColors = new LevelColorService((Plugin)this, global);

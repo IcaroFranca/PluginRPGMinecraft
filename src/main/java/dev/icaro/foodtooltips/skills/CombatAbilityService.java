@@ -25,12 +25,12 @@ import org.bukkit.potion.PotionEffectType;
 
 /**
  * Runtime engine for the combat ability tree: rank storage/progression
- * (spending Valor to unlock and upgrade nodes) and every rank-scaled
+ * (spending Blood Points to unlock and upgrade nodes) and every rank-scaled
  * gameplay effect, including the two menu-cast active abilities.
  */
 public final class CombatAbilityService {
     public enum PurchaseResult {
-        SUCCESS, ALREADY_MAX, LEVEL_TOO_LOW, PREREQUISITE_MISSING, INSUFFICIENT_VALOR
+        SUCCESS, ALREADY_MAX, PREREQUISITE_MISSING, INSUFFICIENT_VALOR
     }
 
     public enum CastResult {
@@ -38,11 +38,12 @@ public final class CombatAbilityService {
     }
 
     private final Plugin plugin;
-    private final CombatSkillService combat;
     private final PlayerStatsService stats;
     private final CombatValorService valor;
-    private final long baseUnlockCost;
+    private final long baseCost;
+    private final long costPerTier;
     private final long costPerRank;
+    private final long costPerRankPerTier;
 
     private final Map<UUID, Integer> bloodStreak = new HashMap<>();
     private final Map<UUID, Integer> attackCounter = new HashMap<>();
@@ -50,13 +51,14 @@ public final class CombatAbilityService {
     private final Map<UUID, Long> vitalTouchCooldowns = new HashMap<>();
     private final Set<UUID> magicDamageInFlight = new HashSet<>();
 
-    public CombatAbilityService(Plugin p, CombatSkillService c, PlayerStatsService stats, CombatValorService valor) {
+    public CombatAbilityService(Plugin p, PlayerStatsService stats, CombatValorService valor) {
         this.plugin = p;
-        this.combat = c;
         this.stats = stats;
         this.valor = valor;
-        this.baseUnlockCost = Math.max(1L, p.getConfig().getLong("combat-tree.base-unlock-cost", 40L));
-        this.costPerRank = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank", 25L));
+        this.baseCost = Math.max(1L, p.getConfig().getLong("combat-tree.base-unlock-cost", 20L));
+        this.costPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-tier", 15L));
+        this.costPerRank = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank", 8L));
+        this.costPerRankPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank-per-tier", 5L));
     }
 
     // ---- Rank / unlock state -------------------------------------------------
@@ -86,10 +88,6 @@ public final class CombatAbilityService {
         return next;
     }
 
-    public boolean levelEligible(Player p, CombatAbility a) {
-        return this.combat.progress(p).level() >= a.level();
-    }
-
     public boolean prerequisitesMet(Player p, CombatAbility a) {
         for (CombatAbility prereq : CombatTreeNode.of(a).prerequisites()) {
             if (!this.unlocked(p, prereq)) {
@@ -99,14 +97,17 @@ public final class CombatAbilityService {
         return true;
     }
 
-    /** Valor cost of the *next* rank, or -1 if the node is already maxed. */
+    /** Blood Points cost of the *next* rank, or -1 if the node is already maxed. Scales with both rank and tree tier. */
     public long nextRankCost(Player p, CombatAbility a) {
         int current = this.rank(p, a);
         int max = this.maxRank(a);
         if (current >= max) {
             return -1L;
         }
-        return CombatTreeMath.rankCost(this.baseUnlockCost, this.costPerRank, current + 1);
+        int tier = CombatTreeNode.of(a).tier();
+        long tierBase = CombatTreeMath.tierBaseCost(this.baseCost, this.costPerTier, tier);
+        long tierPerRank = CombatTreeMath.tierCostPerRank(this.costPerRank, this.costPerRankPerTier, tier);
+        return CombatTreeMath.rankCost(tierBase, tierPerRank, current + 1);
     }
 
     public PurchaseResult purchaseRank(Player p, CombatAbility a) {
@@ -115,13 +116,10 @@ public final class CombatAbilityService {
         if (current >= max) {
             return PurchaseResult.ALREADY_MAX;
         }
-        if (!this.levelEligible(p, a)) {
-            return PurchaseResult.LEVEL_TOO_LOW;
-        }
         if (!this.prerequisitesMet(p, a)) {
             return PurchaseResult.PREREQUISITE_MISSING;
         }
-        long cost = CombatTreeMath.rankCost(this.baseUnlockCost, this.costPerRank, current + 1);
+        long cost = this.nextRankCost(p, a);
         if (!this.valor.withdraw(p, cost)) {
             return PurchaseResult.INSUFFICIENT_VALOR;
         }
@@ -258,6 +256,11 @@ public final class CombatAbilityService {
         return CombatTreeMath.cleaveMaxTargets(this.rank(p, CombatAbility.CLEAVE));
     }
 
+    /** Radius (blocks) swept for loose dropped items when a Telekinesis-enabled kill happens. */
+    public double telekinesisMagnetRadius(Player p) {
+        return this.enabled(p, CombatAbility.TELEKINESIS) ? CombatTreeMath.telekinesisMagnetRadius(this.rank(p, CombatAbility.TELEKINESIS)) : 0.0;
+    }
+
     public double treasureHunterBonus(Player p) {
         return this.enabled(p, CombatAbility.TREASURE_HUNTER) ? CombatTreeMath.treasureHunterBonus(this.rank(p, CombatAbility.TREASURE_HUNTER)) : 0.0;
     }
@@ -338,7 +341,7 @@ public final class CombatAbilityService {
 
     public String description(CombatAbility a, boolean pt) {
         return switch (a) {
-            case TELEKINESIS -> pt ? "Drops e orbes vão direto ao inventário." : "Drops and XP orbs go directly to your inventory.";
+            case TELEKINESIS -> pt ? "Drops vão direto ao inventário; também suga itens soltos próximos, raio escala por rank." : "Drops go directly to your inventory; also sweeps nearby loose items, radius scales per rank.";
             case RUTHLESS_STRIKES -> pt ? "+1% de chance crítica por rank." : "+1% crit chance per rank.";
             case VAMPIRISM -> pt ? "Recupera HP ao matar um mob hostil, escala por rank." : "Recover HP after killing a hostile mob, scales per rank.";
             case SWORD_THROW -> pt ? "F arremessa a espada; dano e recarga melhoram por rank." : "F throws your sword; damage and cooldown improve per rank.";

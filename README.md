@@ -24,14 +24,14 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.21.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.22.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
 **Versionamento**: a cada mudança publicada, suba o número da versão em
 `pom.xml` (`<version>`) e `src/main/resources/plugin.yml` (`version:`) —
-os dois precisam bater. Patch (`0.21.0` → `0.21.1`) para correções e
-ajustes pequenos; minor (`0.21.0` → `0.22.0`) para features novas como a
+os dois precisam bater. Patch (`0.22.0` → `0.22.1`) para correções e
+ajustes pequenos; minor (`0.22.0` → `0.23.0`) para features novas como a
 árvore de combate.
 
 ## Módulos
@@ -56,19 +56,30 @@ por nível. Agora elas (mais 4 novas: `RUTHLESS_STRIKES` e `UNDYING_WILL` passiv
 (`CombatTreeNode`), organizada em 3 ramos temáticos (Fúria, Sangue, Precisão) que
 convergem em nós de sinergia e no capstone `APEX_WARRIOR`.
 
-- **Moeda**: **Cristais de Combate** (`CombatValorService`), obtida matando mobs hostis e ao
-  subir de nível de Combate. Gasta para desbloquear (rank 1) e melhorar
-  (ranks seguintes, até 5 — ou 3 para nós de sinergia/capstone) cada nó,
-  reduzindo cooldowns e aumentando dano/cura conforme o rank.
-- **Pré-requisitos**: cada nó exige nível mínimo de Combate (reaproveitando os
-  antigos thresholds, agora reordenados por ramo) e o(s) nó(s) anterior(es)
-  com rank ≥ 1.
+- **Moeda**: **Pontos de Sangue** 🩸 (`CombatValorService`). Desbloquear e melhorar um
+  nó é gated *somente* por Pontos de Sangue e pelo(s) nó(s) anterior(es) da árvore
+  (rank ≥ 1) — não existe mais requisito de nível de Combate. Cada mob hostil
+  dropa exatamente a quantia mostrada no seu card do Bestiário (`awardedCombatXp()`,
+  arredondado); mobs fora do catálogo caem num fallback baseado em vida máxima.
+  Subir de nível de Combate também dá um bônus fixo.
+- **Ranks e custo por tier**: toda habilidade agora vai de rank 1 a **10**. O custo
+  de cada rank escala tanto com o rank quanto com o *tier* do nó (quão fundo ele
+  está na árvore — raiz = tier 1, calculado automaticamente a partir dos
+  pré-requisitos em `CombatTreeNode`): `custo = (base + custo-por-tier·(tier-1))
+  + (custo-por-rank + custo-por-rank-por-tier·(tier-1))·(rank-1)`, configurável em
+  `combat-tree.*` no `config.yml`. Nós mais profundos (ex.: `APEX_WARRIOR`, tier 6)
+  custam bem mais por rank que os nós-raiz. As fórmulas de efeito (dano, cura,
+  cooldown, etc.) interpolam linearmente do valor de rank 1 ao de rank 10
+  (`CombatTreeMath#lerp`) — ex.: Arremesso de Espada vai de 10% do dano da arma /
+  30s de recarga no rank 1 até 50% do dano / 3s de recarga no rank máximo.
 - **Menu**: `/skills` → "Árvore de Combate" (`CombatTreeMenuService`). Clique
   esquerdo desbloqueia/melhora; shift-clique ativa/desativa passivas
   desbloqueadas; clique direito conjura `ARCANE_SLASH`/`VITAL_TOUCH`.
   Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
   = rank máximo; variante em bloco = habilidade ativa, variante em
   minério/gema = passiva.
+- **Bestiário**: cada entrada mostra quantos Pontos de Sangue 🩸 aquele mob dropa
+  (`BestiaryMenuService`), ao lado de moedas, XP de combate e drops.
 - **Novas stats** (inspiradas em Hypixel SkyBlock, configuráveis em
   `stats.*` no `config.yml`): Ferocity (chance de acerto extra em mobs),
   Swing Range (alcance de interação, quando o servidor expõe o atributo

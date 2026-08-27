@@ -97,10 +97,6 @@ public final class SkillsMenuService {
             if (bag != null) {
                 lore.add(bag);
             }
-            for (CombatAbility a : CombatAbility.values()) {
-                if (a.level() != level) continue;
-                lore.add(this.text("✦ " + l.choose("Elegível na Árvore: ", "Tree-eligible: ") + a.name(l == Language.PT), NamedTextColor.LIGHT_PURPLE));
-            }
             if (level == x.level() + 1) {
                 lore.add(this.xp(x.xp(), x.requiredXp()));
             }
