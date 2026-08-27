@@ -4,8 +4,6 @@ import java.util.Arrays;
 import org.bukkit.Material;
 
 public record LevelColorTheme(String id, String name, int requiredLevel, Material icon, int intervalTicks, int[] palette) {
-    private final int[] palette;
-
     public LevelColorTheme {
         palette = Arrays.copyOf(palette, palette.length);
     }
