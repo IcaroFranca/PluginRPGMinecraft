@@ -213,6 +213,7 @@ extends JavaPlugin {
             stats.regenVitality((Player)p, vitalityRegen);
             double healthRegenMultiplier = stats.stats((Player)p).healthRegen() / 100.0;
             stats.regenHealth((Player)p, naturalHealthRegenPerSecond * healthRegenMultiplier * (double)ticks / 20.0);
+            armor.neutralizeVanillaArmor((Player)p);
             hud.show((Player)p, stats.stats((Player)p), armor.defense((Player)p));
         }), 1L, ticks);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, this.visuals::tick, 1L, Math.max(1L, this.getConfig().getLong("mob-visuals.update-ticks", 3L)));

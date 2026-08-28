@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.28.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.28.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -197,9 +197,11 @@ skills estiverem prontas:
   `GeneralSkillService#defense` na verdade retornava o nível de Mineração).
   `ArmorDefenseService` soma um valor fixo por peça/material e
   `ArmorDefenseListener` zera o atributo vanilla `ARMOR`/`ARMOR_TOUGHNESS`
-  no join e sempre que o equipamento muda (`PlayerArmorChangeEvent`), então
-  só esse número conta pra redução de dano (mesma curva de antes:
-  `defesa / (defesa + 100)`). Valores por peça (capacete/peitoral/calça/bota):
+  no join e a cada tick do HUD (mesmo padrão de "reaplicar sempre" já usado
+  pra Swing Range/HP bônus — evita depender de qual pacote/versão o evento
+  de troca de armadura do Paper usa), então só esse número conta pra redução
+  de dano (mesma curva de antes: `defesa / (defesa + 100)`). Valores por
+  peça (capacete/peitoral/calça/bota):
 
   | Material | Capacete | Peitoral | Calça | Bota | Total |
   |---|---|---|---|---|---|
