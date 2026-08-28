@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.27.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.27.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -97,8 +97,10 @@ status aparece no menu "Seus status" (`/skills`).
   = rank máximo; variante em bloco = habilidade ativa, variante em
   minério/gema = passiva. O botão de voltar fica no canto inferior esquerdo
   e a cabeça do jogador (moeda/legenda) no canto inferior direito. O
-  preenchimento dos slots vazios agora é carvão (antes, vidro cinza) —
-  visual de "baú de carvão" em vez de painel neutro.
+  preenchimento dos slots vazios é vidro preto (chegou a ser trocado pra
+  carvão pra imitar um "baú de carvão", mas isso escondia todo nó ainda
+  bloqueado — que já usa exatamente o ícone de carvão — dentro do fundo;
+  vidro preto mantém o tom escuro sem colidir com nenhum ícone de estado).
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",

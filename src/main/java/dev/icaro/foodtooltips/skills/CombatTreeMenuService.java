@@ -64,7 +64,9 @@ public final class CombatTreeMenuService {
     public void open(Player p) {
         Language l = Language.of(p);
         Inventory v = Bukkit.createInventory(null, 54, l.choose("Árvore de Combate", "Combat Tree"));
-        ItemStack filler = this.item(Material.COAL, " ", List.of());
+        // Not Material.COAL: locked passive nodes already use that icon (see #stateIcon below),
+        // so a coal filler made every still-locked node vanish into the background.
+        ItemStack filler = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
         for (int i = 0; i < 54; i++) {
             v.setItem(i, filler);
         }
