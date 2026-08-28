@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.28.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.28.2.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -206,17 +206,19 @@ skills estiverem prontas:
   | Material | Capacete | Peitoral | Calça | Bota | Total |
   |---|---|---|---|---|---|
   | Couro | 5 | 15 | 10 | 5 | 35 |
+  | Cobre | 6 | 18 | 13 | 6 | 43 |
   | Corrente | 9 | 23 | 18 | 8 | 58 |
   | Ouro | 10 | 25 | 15 | 5 | 55 |
   | Ferro | 12 | 30 | 25 | 10 | 77 |
   | Diamante | 15 | 40 | 30 | 15 | 100 |
   | Netherite | 18 | 46 | 35 | 18 | 117 |
 
-  Couro/Ferro/Ouro/Diamante foram os valores pedidos; Corrente e Netherite
-  foram escolhidos pra manter a mesma ordem relativa do vanilla (Couro <
-  Ouro ≲ Corrente < Ferro < Diamante < Netherite). Elmo de Tartaruga também
-  ganha um valor pequeno (4) pra não virar defesa zero. Resistência a
-  empurrão (perk do Netherite) não é mexida — só ARMOR/ARMOR_TOUGHNESS.
+  Couro/Ferro/Ouro/Diamante foram os valores pedidos; Cobre, Corrente e
+  Netherite foram escolhidos pra manter a mesma ordem relativa do vanilla
+  (Couro < Cobre < Ouro ≲ Corrente < Ferro < Diamante < Netherite). Elmo de
+  Tartaruga também ganha um valor pequeno (4) pra não virar defesa zero.
+  Resistência a empurrão (perk do Netherite) não é mexida — só
+  ARMOR/ARMOR_TOUGHNESS.
 
   **Limitação conhecida**: a tooltip do item de armadura em si (tanto no
   inventário quanto no slot equipado dentro de "Status & Equipamento") ainda

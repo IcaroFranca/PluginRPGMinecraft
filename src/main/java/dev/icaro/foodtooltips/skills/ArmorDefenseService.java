@@ -45,11 +45,13 @@ public final class ArmorDefenseService {
     }
 
     /**
-     * Leather/Iron/Golden/Diamond values are the ones requested; Chainmail and
-     * Netherite were left to balance — Chainmail sits between Leather and Iron
-     * (closer to Iron), Netherite a clear step above Diamond (~+17% total),
-     * matching vanilla's relative material ordering. Turtle Helmet gets a
-     * small value too so wearing one isn't a hard defense downgrade to zero.
+     * Leather/Iron/Golden/Diamond values are the ones requested; Chainmail,
+     * Copper and Netherite were left to balance — Copper sits just above
+     * Leather (a soft metal, weaker than every other armor tier), Chainmail
+     * between Copper and Iron (closer to Iron), Netherite a clear step above
+     * Diamond (~+17% total), matching vanilla's relative material ordering.
+     * Turtle Helmet gets a small value too so wearing one isn't a hard
+     * defense downgrade to zero.
      */
     private static int defenseFor(Material m) {
         return switch (m) {
@@ -57,6 +59,11 @@ public final class ArmorDefenseService {
             case Material.LEATHER_CHESTPLATE -> 15;
             case Material.LEATHER_LEGGINGS -> 10;
             case Material.LEATHER_BOOTS -> 5;
+
+            case Material.COPPER_HELMET -> 6;
+            case Material.COPPER_CHESTPLATE -> 18;
+            case Material.COPPER_LEGGINGS -> 13;
+            case Material.COPPER_BOOTS -> 6;
 
             case Material.CHAINMAIL_HELMET -> 9;
             case Material.CHAINMAIL_CHESTPLATE -> 23;
