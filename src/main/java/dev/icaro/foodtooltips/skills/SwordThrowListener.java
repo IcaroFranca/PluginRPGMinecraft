@@ -108,7 +108,7 @@ implements Listener {
                 this.at.add(direction);
                 display.teleport(this.at);
                 float angle = (float)((double)this.ticks * Math.PI / 3.0);
-                display.setTransformation(new Transformation(new Vector3f(), new Quaternionf().rotateZ(angle), new Vector3f(1.0f, 1.0f, 1.0f), new Quaternionf()));
+                display.setTransformation(new Transformation(new Vector3f(), new Quaternionf().rotateX(angle), new Vector3f(1.0f, 1.0f, 1.0f), new Quaternionf()));
             }
 
             private void finish() {

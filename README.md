@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.26.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.27.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -74,23 +74,31 @@ status aparece no menu "Seus status" (`/skills`).
   dropa exatamente a quantia mostrada no seu card do Bestiário (`awardedCombatXp()`,
   arredondado); mobs fora do catálogo caem num fallback baseado em vida máxima.
   Subir de nível de Combate também dá um bônus fixo.
-- **Ranks e custo por tier**: toda habilidade agora vai de rank 1 a **10**. O custo
-  de cada rank escala tanto com o rank quanto com o *tier* do nó (quão fundo ele
-  está na árvore — raiz = tier 1, calculado automaticamente a partir dos
+- **Ranks e custo por tier**: cada habilidade agora tem seu **próprio** rank
+  máximo (`CombatTreeNode`, campo `maxRank`) — nunca menor que 10, mas alguns
+  nós exigem mais (12/15/20, e o capstone `APEX_WARRIOR` vai até 25) pra serem
+  um grind mais longo sem mudar o quão forte a habilidade fica no rank máximo
+  (mesmo valor final, só espalhado por mais ranks). O custo de cada rank
+  escala tanto com o rank quanto com o *tier* do nó (quão fundo ele está na
+  árvore — raiz = tier 1, calculado automaticamente a partir dos
   pré-requisitos em `CombatTreeNode`): `custo = (base + custo-por-tier·(tier-1))
   + (custo-por-rank + custo-por-rank-por-tier·(tier-1))·(rank-1)`, configurável em
   `combat-tree.*` no `config.yml`. Nós mais profundos (ex.: `APEX_WARRIOR`, tier 6)
   custam bem mais por rank que os nós-raiz. As fórmulas de efeito (dano, cura,
-  cooldown, etc.) interpolam linearmente do valor de rank 1 ao de rank 10
-  (`CombatTreeMath#lerp`) — ex.: Arremesso de Espada vai de 10% do dano da arma /
-  30s de recarga no rank 1 até 50% do dano / 3s de recarga no rank máximo.
+  cooldown, etc.) interpolam linearmente do valor de rank 1 ao de rank máximo
+  de cada habilidade (`CombatTreeMath#lerp`, agora recebendo `maxRank` como
+  parâmetro explícito em vez de uma constante global) — ex.: Arremesso de
+  Espada (rank máximo 15) vai de 10% do dano da arma / 30s de recarga no
+  rank 1 até 50% do dano / 3s de recarga no rank 15.
 - **Menu**: `/skills` → "Árvore de Combate" (`CombatTreeMenuService`). Clique
   esquerdo desbloqueia/melhora; shift-clique ativa/desativa passivas
   desbloqueadas; clique direito conjura `ARCANE_SLASH`/`VITAL_TOUCH`.
   Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
   = rank máximo; variante em bloco = habilidade ativa, variante em
   minério/gema = passiva. O botão de voltar fica no canto inferior esquerdo
-  e a cabeça do jogador (moeda/legenda) no canto inferior direito.
+  e a cabeça do jogador (moeda/legenda) no canto inferior direito. O
+  preenchimento dos slots vazios agora é carvão (antes, vidro cinza) —
+  visual de "baú de carvão" em vez de painel neutro.
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
@@ -104,7 +112,7 @@ status aparece no menu "Seus status" (`/skills`).
   `HUNTERS_INSTINCT` em seu lugar.
 - **Bestiário**: cada entrada mostra quantos Pontos de Sangue 🩸 aquele mob dropa
   (`BestiaryMenuService`), ao lado de moedas, XP de combate e drops.
-- **Novas stats** (inspiradas em Hypixel SkyBlock, configuráveis em
+- **Novas stats** (inspiradas em Hypixel SkyBlock, base configurável em
   `stats.*` no `config.yml`): Ferocity (chance de acerto extra em mobs),
   Swing Range (alcance de interação, quando o servidor expõe o atributo
   vanilla correspondente), Intelligence (Mana máxima + dano mágico),
@@ -112,6 +120,24 @@ status aparece no menu "Seus status" (`/skills`).
   (regeneração natural), Vitality (novo recurso, separado de Mana/Vida,
   usado por `VITAL_TOUCH`) e Mending (multiplica cura aplicada a
   *outros* jogadores).
+- **Toda stat de combate agora é upável pela árvore, exceto as 3 primeiras**
+  (Vida, Defesa e Defesa Verdadeira ficam fora de propósito — vêm só de
+  atributo vanilla/gear/config, sem fonte na árvore). As outras 8 ganham um
+  bônus de uma habilidade específica, empilhado em cima da base do
+  `config.yml` (`PlayerStatsService#stats`, ver o javadoc de
+  `CombatAbilityService` pra lista completa nó → stat):
+  `COMBAT_MASTERY` → Strength, `CLEAVE` → Ferocity (temático, já que Ferocity
+  *é* chance de acerto extra e Cleave já acerta múltiplos alvos),
+  `SWORD_THROW` → Swing Range, `ARCANE_SLASH` → Intelligence, `APEX_WARRIOR`
+  → Ability Damage (o payoff mais amplo de fim de jogo, no capstone),
+  `SOUL_HARVEST` → Health Regen, `UNDYING_WILL` → Vitalidade máxima,
+  `SECOND_WIND` → Mending. Cada nó afetado mostra a linha extra no tooltip
+  (`statPreview`) junto dos bônus que já tinha.
+- **Arremesso de Espada gira pra frente, não mais de lado**: o `ItemDisplay`
+  usado no voo da espada rodava em torno do eixo Z (`Quaternionf#rotateZ`),
+  o que parecia um giro "de disco" (plano, de lado). Trocado por
+  `rotateX`, que faz a espada tombar pra frente (cambalhota) como um
+  arremesso de faca de verdade (`SwordThrowListener`).
 
 ### Bugs pré-existentes corrigidos nesta mudança
 
@@ -137,7 +163,7 @@ descompilação original que só o compilador real pegava.
 
 Além disso, `CombatTreeMath` (a matemática da árvore — curva de custo,
 Ferocity, fórmulas de escala por rank) é puro Java sem dependência do
-Bukkit e roda com testes próprios (73 checks) direto nesta sandbox.
+Bukkit e roda com testes próprios (84 checks) direto nesta sandbox.
 
 ## Nível Global
 
@@ -170,11 +196,20 @@ o que estiver ativo).
 
 Clicar na cabeça abre uma tela nova ("Status & Equipamento",
 `SkillsMenuService#openStats`) com o restante dos status, agrupados por ícone
-temático (Combate/espada, Vitalidade/maçã dourada, Magia/estrela, Defesa/escudo,
-Fortune de Mineração/Agricultura/Coleta com os mesmos ícones do menu principal),
-e as 4 peças de armadura que o jogador tem equipadas (capacete, peitoral,
-calças, botas) mostradas como os itens reais — nome, encantos e tudo — lidas
-direto de `Player#getInventory()`; um slot vazio mostra "Nada equipado."
+temático (Combate/espada, Fortune de Mineração/Agricultura/Coleta com os
+mesmos ícones do menu principal), e as 4 peças de armadura que o jogador tem
+equipadas (capacete, peitoral, calças, botas) mostradas como os itens reais —
+nome, encantos e tudo — lidas direto de `Player#getInventory()`; um slot
+vazio mostra "Nada equipado."
+
+**"Status de Combate" virou uma lista única e completa** (estilo Hypixel
+SkyBlock): Vida, Defesa, Defesa Verdadeira, Strength, Chance Crítica, Dano
+Crítico, Ferocity, Alcance de Ataque, Inteligência, Dano de Habilidade,
+Regen. de Vida, Vitality e Mending, tudo no mesmo item (`combatStatsItem`,
+antes dividido em 4 itens separados — Combate/Vitalidade/Magia/Defesa — que
+saíram do menu). Como quase todas essas stats agora vêm parcialmente da
+árvore de combate, os números aqui já refletem qualquer bônus de habilidade
+ativa.
 
 ## Reorganização do menu de Skills
 

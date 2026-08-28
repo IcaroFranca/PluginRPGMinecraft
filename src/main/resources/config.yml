@@ -19,6 +19,10 @@ stats:
   natural-health-regen-per-second: 0.5
   # Mending: % multiplier applied to healing an ability lands on someone other than the caster.
   base-mending: 100.0
+  # True Defense: flat damage reduction that bypasses percentage-based effects. Deliberately
+  # NOT granted by the combat tree (unlike every other stat on the Combat Stats screen) —
+  # reserved for future gear/enchant sources.
+  base-true-defense: 0.0
 hud:
   update-ticks: 5
   spacing: "     "

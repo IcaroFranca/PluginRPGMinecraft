@@ -75,6 +75,7 @@ extends JavaPlugin {
         GeneralSkillService general = new GeneralSkillService();
         CombatValorService valor = new CombatValorService((Plugin)this);
         CombatAbilityService abilities = new CombatAbilityService((Plugin)this, stats, valor);
+        stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
         ShopService shop = new ShopService((Plugin)this, economy);
         BestiaryProgressService bestiaryProgress = new BestiaryProgressService((Plugin)this);

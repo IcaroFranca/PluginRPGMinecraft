@@ -64,7 +64,7 @@ public final class CombatTreeMenuService {
     public void open(Player p) {
         Language l = Language.of(p);
         Inventory v = Bukkit.createInventory(null, 54, l.choose("Árvore de Combate", "Combat Tree"));
-        ItemStack filler = this.item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
+        ItemStack filler = this.item(Material.COAL, " ", List.of());
         for (int i = 0; i < 54; i++) {
             v.setItem(i, filler);
         }

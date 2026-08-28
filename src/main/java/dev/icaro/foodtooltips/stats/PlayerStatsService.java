@@ -1,6 +1,7 @@
 package dev.icaro.foodtooltips.stats;
 
 import dev.icaro.foodtooltips.global.GlobalLevelService;
+import dev.icaro.foodtooltips.skills.CombatAbilityService;
 import net.kyori.adventure.key.Key;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -12,6 +13,15 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
+/**
+ * Tracks every non-vanilla combat stat. Base values come from config; the
+ * combat ability tree layers additional bonuses on top for every stat here
+ * except {@link PlayerStats#trueDefense()} (deliberately tree-independent —
+ * see {@link CombatAbilityService}'s class doc for which ability grants
+ * which bonus). {@link #abilities(CombatAbilityService)} is wired in after
+ * construction (the two services depend on each other) exactly like
+ * {@link #global(GlobalLevelService)} already is.
+ */
 public final class PlayerStatsService {
     private final NamespacedKey mana;
     private final NamespacedKey maxMana;
@@ -21,12 +31,16 @@ public final class PlayerStatsService {
     private final double base;
     private final double baseVitality;
     private final double ferocity;
+    private final double ferocityCap;
     private final double swingRange;
+    private final double swingRangeCap;
     private final double intelligence;
     private final double abilityDamage;
     private final double healthRegen;
     private final double mending;
+    private final double trueDefense;
     private GlobalLevelService global;
+    private CombatAbilityService abilities;
 
     private static boolean attributeResolved;
     private static Attribute entityInteractionRangeAttribute;
@@ -34,14 +48,15 @@ public final class PlayerStatsService {
     public PlayerStatsService(Plugin p) {
         this.base = p.getConfig().getDouble("stats.base-mana", 100.0);
         this.baseVitality = p.getConfig().getDouble("stats.base-vitality", 100.0);
-        double ferocityCap = p.getConfig().getDouble("stats.ferocity-cap", 500.0);
-        this.ferocity = clamp(p.getConfig().getDouble("stats.base-ferocity", 0.0), 0.0, ferocityCap);
-        double swingRangeCap = p.getConfig().getDouble("stats.swing-range-cap", 15.0);
-        this.swingRange = clamp(p.getConfig().getDouble("stats.base-swing-range", 3.0), 0.0, swingRangeCap);
+        this.ferocityCap = p.getConfig().getDouble("stats.ferocity-cap", 500.0);
+        this.ferocity = clamp(p.getConfig().getDouble("stats.base-ferocity", 0.0), 0.0, this.ferocityCap);
+        this.swingRangeCap = p.getConfig().getDouble("stats.swing-range-cap", 15.0);
+        this.swingRange = clamp(p.getConfig().getDouble("stats.base-swing-range", 3.0), 0.0, this.swingRangeCap);
         this.intelligence = Math.max(0.0, p.getConfig().getDouble("stats.base-intelligence", 0.0));
         this.abilityDamage = Math.max(0.0, p.getConfig().getDouble("stats.base-ability-damage", 0.0));
         this.healthRegen = Math.max(0.0, p.getConfig().getDouble("stats.base-health-regen", 100.0));
         this.mending = Math.max(0.0, p.getConfig().getDouble("stats.base-mending", 100.0));
+        this.trueDefense = Math.max(0.0, p.getConfig().getDouble("stats.base-true-defense", 0.0));
         this.mana = new NamespacedKey("foodtooltips", "stat_mana");
         this.maxMana = new NamespacedKey("foodtooltips", "stat_max_mana");
         this.vitality = new NamespacedKey("foodtooltips", "stat_vitality");
@@ -51,6 +66,10 @@ public final class PlayerStatsService {
 
     public void global(GlobalLevelService global) {
         this.global = global;
+    }
+
+    public void abilities(CombatAbilityService abilities) {
+        this.abilities = abilities;
     }
 
     public void init(Player p) {
@@ -81,21 +100,35 @@ public final class PlayerStatsService {
         double storedMaxVitality = this.get(p, this.maxVitality, this.baseVitality);
         double storedVitality = this.get(p, this.vitality, storedMaxVitality);
         AttributeInstance a = p.getAttribute(Attribute.MAX_HEALTH);
-        long strength = this.global == null ? 0L : this.global.snapshot(p).strength();
+        long globalStrength = this.global == null ? 0L : this.global.snapshot(p).strength();
+
+        double strengthBonus = this.abilities == null ? 0.0 : this.abilities.strengthBonus(p);
+        double ferocityBonus = this.abilities == null ? 0.0 : this.abilities.ferocityBonus(p);
+        double swingRangeBonus = this.abilities == null ? 0.0 : this.abilities.swingRangeBonus(p);
+        double intelligenceBonus = this.abilities == null ? 0.0 : this.abilities.intelligenceBonus(p);
+        double abilityDamageBonus = this.abilities == null ? 0.0 : this.abilities.abilityDamageBonus(p);
+        double healthRegenBonus = this.abilities == null ? 0.0 : this.abilities.healthRegenBonus(p);
+        double vitalityBonus = this.abilities == null ? 0.0 : this.abilities.vitalityBonus(p);
+        double mendingBonus = this.abilities == null ? 0.0 : this.abilities.mendingBonus(p);
+
+        double effectiveMaxVitality = storedMaxVitality + vitalityBonus;
+        double effectiveIntelligence = this.intelligence + intelligenceBonus;
+
         return new PlayerStats(
                 p.getHealth(),
                 a == null ? 20.0 : a.getValue(),
                 Math.min(effectiveMaxMana, storedMana),
                 effectiveMaxMana,
-                strength,
-                this.ferocity,
-                this.swingRange,
-                this.intelligence,
-                this.abilityDamage,
-                this.healthRegen,
-                Math.min(storedMaxVitality, storedVitality),
-                storedMaxVitality,
-                this.mending);
+                globalStrength + Math.round(strengthBonus),
+                clamp(this.ferocity + ferocityBonus, 0.0, this.ferocityCap),
+                clamp(this.swingRange + swingRangeBonus, 0.0, this.swingRangeCap),
+                effectiveIntelligence,
+                this.abilityDamage + abilityDamageBonus,
+                this.healthRegen + healthRegenBonus,
+                Math.min(effectiveMaxVitality, storedVitality),
+                effectiveMaxVitality,
+                this.mending + mendingBonus,
+                this.trueDefense);
     }
 
     public void regen(Player p, double n) {
@@ -175,7 +208,7 @@ public final class PlayerStatsService {
         if (old != null) {
             instance.removeModifier(old);
         }
-        double delta = this.swingRange - instance.getBaseValue();
+        double delta = this.stats(p).swingRange() - instance.getBaseValue();
         if (Math.abs(delta) > 1.0E-4) {
             instance.addTransientModifier(new AttributeModifier(this.swingRangeKey, delta, AttributeModifier.Operation.ADD_NUMBER));
         }

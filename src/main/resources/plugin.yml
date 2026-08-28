@@ -1,5 +1,5 @@
 name: NexusRPG
-version: '0.26.1'
+version: '0.27.0'
 main: dev.icaro.foodtooltips.FoodTooltipsPlugin
 api-version: '26.2'
 author: icaro
