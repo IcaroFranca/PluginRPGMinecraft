@@ -12,7 +12,9 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -21,17 +23,19 @@ import org.bukkit.persistence.PersistentDataType;
 
 /**
  * Defense now comes entirely from a fixed per-piece table below, not from
- * vanilla armor points/toughness — {@link #neutralizeVanillaArmor(Player)}
- * cancels the {@link Attribute#ARMOR}/{@link Attribute#ARMOR_TOUGHNESS} a
- * player would otherwise get from wearing armor (call on join and whenever
- * equipment changes; see {@link ArmorDefenseListener}), and {@link
- * #defense(Player)} is the number actually used everywhere "Defense" is
- * shown or applied (replaces the old, unrelated
- * {@code GeneralSkillService#defense}, which was really just Mining level).
- * {@link #applyDefenseTooltip(Player)} rewrites the armor item's own
- * tooltip to match: vanilla's Armor/Armor Toughness attribute lines hidden,
- * a "Defense: +N" lore line shown instead — so the number the player sees
- * on the item itself is the number that actually applies.
+ * vanilla armor points/toughness — for players and mobs alike. {@link
+ * #neutralizeVanillaArmor(LivingEntity)} cancels the {@link
+ * Attribute#ARMOR}/{@link Attribute#ARMOR_TOUGHNESS} an entity would
+ * otherwise get from wearing armor (call on player join/HUD tick — see
+ * {@link ArmorDefenseListener} — and once on mob spawn, since mobs rarely
+ * change gear after spawning), and {@link #defense(LivingEntity)} is the
+ * number actually used everywhere "Defense" is shown or applied (replaces
+ * the old, unrelated {@code GeneralSkillService#defense}, which was really
+ * just Mining level). {@link #applyDefenseTooltip(Player)} rewrites the
+ * armor item's own tooltip to match (players only — mobs don't have a
+ * tooltip-visible inventory): vanilla's Armor/Armor Toughness attribute
+ * lines hidden, a "Defense: +N" lore line shown instead, so the number the
+ * player sees on the item itself is the number that actually applies.
  *
  * <p>Knockback resistance (netherite's vanilla perk) is deliberately left
  * alone — only ARMOR/ARMOR_TOUGHNESS are neutralized.
@@ -41,17 +45,18 @@ public final class ArmorDefenseService {
     private final NamespacedKey toughnessKey = new NamespacedKey("foodtooltips", "vanilla_armor_toughness_zero");
     private final NamespacedKey tooltipKey = new NamespacedKey("foodtooltips", "defense_tooltip_applied");
 
-    /** Sum of the equipped helmet/chestplate/leggings/boots' Defense values. */
-    public int defense(Player p) {
-        return pieceDefense(p.getInventory().getHelmet())
-                + pieceDefense(p.getInventory().getChestplate())
-                + pieceDefense(p.getInventory().getLeggings())
-                + pieceDefense(p.getInventory().getBoots());
+    /** Sum of the equipped helmet/chestplate/leggings/boots' Defense values — works for any player or mob. */
+    public int defense(LivingEntity e) {
+        EntityEquipment eq = e.getEquipment();
+        if (eq == null) {
+            return 0;
+        }
+        return pieceDefense(eq.getHelmet()) + pieceDefense(eq.getChestplate()) + pieceDefense(eq.getLeggings()) + pieceDefense(eq.getBoots());
     }
 
     /** Same curve as before (defense/(defense+100)): 100 Defense = 50% reduction, approaching 100% asymptotically. */
-    public double damageReduction(Player p) {
-        int defense = this.defense(p);
+    public double damageReduction(LivingEntity e) {
+        int defense = this.defense(e);
         return (double) defense / ((double) defense + 100.0);
     }
 
@@ -172,14 +177,14 @@ public final class ArmorDefenseService {
         return item;
     }
 
-    /** Zeroes ARMOR and ARMOR_TOUGHNESS so only {@link #defense(Player)} matters for damage reduction. */
-    public void neutralizeVanillaArmor(Player p) {
-        zero(p, Attribute.ARMOR, this.armorKey);
-        zero(p, Attribute.ARMOR_TOUGHNESS, this.toughnessKey);
+    /** Zeroes ARMOR and ARMOR_TOUGHNESS so only {@link #defense(LivingEntity)} matters for damage reduction. */
+    public void neutralizeVanillaArmor(LivingEntity e) {
+        zero(e, Attribute.ARMOR, this.armorKey);
+        zero(e, Attribute.ARMOR_TOUGHNESS, this.toughnessKey);
     }
 
-    private static void zero(Player p, Attribute attribute, NamespacedKey key) {
-        AttributeInstance instance = p.getAttribute(attribute);
+    private static void zero(LivingEntity e, Attribute attribute, NamespacedKey key) {
+        AttributeInstance instance = e.getAttribute(attribute);
         if (instance == null) {
             return;
         }

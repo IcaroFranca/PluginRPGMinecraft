@@ -115,7 +115,7 @@ extends JavaPlugin {
         pm.registerEvents((Listener)gems, (Plugin)this);
         pm.registerEvents((Listener)new MiningMenuListener(mining, menus, gems), (Plugin)this);
         pm.registerEvents((Listener)new BestiaryListener(bestiary), (Plugin)this);
-        CombatListener combatListener = new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor);
+        CombatListener combatListener = new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor, armor);
         pm.registerEvents((Listener)combatListener, (Plugin)this);
         pm.registerEvents((Listener)new ArmorDefenseListener(armor), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
@@ -221,6 +221,7 @@ extends JavaPlugin {
         for (World w : this.getServer().getWorlds()) {
             for (LivingEntity e : w.getLivingEntities()) {
                 combatListener.scaleMobHealth(e);
+                armor.neutralizeVanillaArmor(e);
                 this.visuals.track(e);
             }
         }

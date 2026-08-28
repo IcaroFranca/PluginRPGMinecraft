@@ -236,18 +236,13 @@ public final class CombatAbilityService {
     }
 
     /**
-     * Whether the target has any defense worth piercing: for a player, the custom
-     * {@link ArmorDefenseService#defense} stat (vanilla ARMOR is deliberately zeroed
-     * for players now — checking the vanilla attribute here would make Armor Piercer
-     * never trigger in PvP, since every player's vanilla ARMOR reads 0); for a mob,
-     * vanilla ARMOR (untouched — e.g. armored zombies/piglins/wither skeletons).
+     * Whether the target has any defense worth piercing — the custom {@link
+     * ArmorDefenseService#defense} stat, which now applies to players and armored mobs
+     * alike (vanilla ARMOR is deliberately zeroed for both — see {@link
+     * ArmorDefenseService}), so checking the vanilla attribute here would never trigger.
      */
     private boolean hasDefense(LivingEntity target) {
-        if (target instanceof Player targetPlayer) {
-            return this.armor.defense(targetPlayer) > 0;
-        }
-        AttributeInstance armorAttr = target.getAttribute(Attribute.ARMOR);
-        return armorAttr != null && armorAttr.getValue() > 0.0;
+        return this.armor.defense(target) > 0;
     }
 
     private static double maxHealth(LivingEntity e) {

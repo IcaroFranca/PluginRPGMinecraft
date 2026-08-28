@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.29.2.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.29.3.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -215,16 +215,20 @@ skills estiverem prontas:
   mundo. Só a vida sobe — XP e Pontos de Sangue dropados por mobs sem entrada
   no Bestiário também sobem proporcionalmente (dependem da vida máxima), mas
   os valores fixos do Bestiário **não** mudam nesta leva.
-- **Defesa agora vem só da armadura equipada, não mais do vanilla nem do
-  nível de Mineração** (era um valor incorreto herdado da descompilação —
-  `GeneralSkillService#defense` na verdade retornava o nível de Mineração).
-  `ArmorDefenseService` soma um valor fixo por peça/material e
-  `ArmorDefenseListener` zera o atributo vanilla `ARMOR`/`ARMOR_TOUGHNESS`
-  no join e a cada tick do HUD (mesmo padrão de "reaplicar sempre" já usado
-  pra Swing Range/HP bônus — evita depender de qual pacote/versão o evento
-  de troca de armadura do Paper usa), então só esse número conta pra redução
-  de dano (mesma curva de antes: `defesa / (defesa + 100)`). Valores por
-  peça (capacete/peitoral/calça/bota):
+- **Defesa agora vem só da armadura equipada — de jogadores e mobs — não
+  mais do vanilla nem do nível de Mineração** (era um valor incorreto
+  herdado da descompilação — `GeneralSkillService#defense` na verdade
+  retornava o nível de Mineração). `ArmorDefenseService#defense` soma um
+  valor fixo por peça/material a partir do `EntityEquipment` de qualquer
+  `LivingEntity` (funciona igual pra jogador ou mob), e `neutralizeVanillaArmor`
+  zera o atributo vanilla `ARMOR`/`ARMOR_TOUGHNESS` — em jogadores no join e a
+  cada tick do HUD (mesmo padrão de "reaplicar sempre" já usado pra Swing
+  Range/HP bônus — evita depender de qual pacote/versão o evento de troca de
+  armadura do Paper usa), em mobs uma vez no spawn (`CombatListener#spawn`,
+  mobs raramente trocam de equipamento depois de nascer). Só esse número
+  conta pra redução de dano de qualquer `LivingEntity` (mesma curva de
+  antes: `defesa / (defesa + 100)`, aplicada em `ArmorDefenseListener#defense`
+  pra qualquer alvo, não só jogadores). Valores por peça (capacete/peitoral/calça/bota):
 
   | Material | Capacete | Peitoral | Calça | Bota | Total |
   |---|---|---|---|---|---|
@@ -251,13 +255,13 @@ skills estiverem prontas:
   join e a cada tick do HUD, uma vez por item (guardado por uma flag na PDC
   do próprio item, então não sobrescreve encantos/renomes feitos depois).
 
-  **Corrige Perfurador de Armadura no PvP**: a habilidade checava se o alvo
-  tinha `Attribute.ARMOR` vanilla > 0 pra decidir se dava o bônus de dano —
-  como a mudança acima zera esse atributo de propósito em todo jogador, a
-  habilidade nunca mais disparava contra outros jogadores (só contra mobs
-  armados). `CombatAbilityService#hasDefense` agora checa
-  `ArmorDefenseService#defense` quando o alvo é um jogador, e o atributo
-  vanilla quando é um mob (que continua intocado).
+  **Corrige Perfurador de Armadura no PvP e em mobs**: a habilidade checava
+  se o alvo tinha `Attribute.ARMOR` vanilla > 0 pra decidir se dava o bônus
+  de dano — como a Defesa vanilla é zerada de propósito, a habilidade nunca
+  mais disparava contra outros jogadores (só contra os poucos mobs que já
+  vinham com armadura vanilla). `CombatAbilityService#hasDefense` agora só
+  checa `ArmorDefenseService#defense`, que funciona igual pra jogador ou
+  mob.
 
 ## Nível Global
 

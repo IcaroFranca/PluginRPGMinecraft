@@ -8,6 +8,7 @@ import dev.icaro.foodtooltips.global.GlobalLevelService;
 import dev.icaro.foodtooltips.global.GlobalSkill;
 import dev.icaro.foodtooltips.global.GlobalXpSource;
 import dev.icaro.foodtooltips.i18n.Language;
+import dev.icaro.foodtooltips.skills.ArmorDefenseService;
 import dev.icaro.foodtooltips.skills.CombatAbility;
 import dev.icaro.foodtooltips.skills.CombatAbilityService;
 import dev.icaro.foodtooltips.skills.CombatSkillService;
@@ -63,6 +64,7 @@ public final class CombatListener implements Listener {
     private final GlobalLevelService global;
     private final PlayerStatsService stats;
     private final CombatValorService valor;
+    private final ArmorDefenseService armor;
     private final Map<UUID, Long> secondWind = new HashMap<>();
     private final double critMultiplier;
     private final double hpXp;
@@ -72,7 +74,7 @@ public final class CombatListener implements Listener {
 
     public CombatListener(Plugin p, CombatSkillService c, MobVisualService v, BestiaryProgressService b, SkillProgressBarService bar,
                            CombatAbilityService abilityService, EconomyService economyService, GlobalLevelService global,
-                           PlayerStatsService stats, CombatValorService valor) {
+                           PlayerStatsService stats, CombatValorService valor, ArmorDefenseService armor) {
         this.plugin = p;
         this.combat = c;
         this.visuals = v;
@@ -83,6 +85,7 @@ public final class CombatListener implements Listener {
         this.global = global;
         this.stats = stats;
         this.valor = valor;
+        this.armor = armor;
         this.critMultiplier = p.getConfig().getDouble("combat.critical-damage-multiplier", 1.5);
         this.hpXp = p.getConfig().getDouble("combat.hostile-xp-health-multiplier", 2.0);
         this.levelXp = p.getConfig().getDouble("combat.hostile-xp-level-multiplier", 3.0);
@@ -92,6 +95,7 @@ public final class CombatListener implements Listener {
     @EventHandler
     public void spawn(CreatureSpawnEvent e) {
         this.scaleMobHealth(e.getEntity());
+        this.armor.neutralizeVanillaArmor(e.getEntity());
         Bukkit.getScheduler().runTask(this.plugin, () -> this.visuals.track(e.getEntity()));
     }
 
