@@ -40,7 +40,7 @@ import org.bukkit.potion.PotionEffectType;
  */
 public final class CombatAbilityService {
     public enum PurchaseResult {
-        SUCCESS, ALREADY_MAX, PREREQUISITE_MISSING, INSUFFICIENT_VALOR
+        SUCCESS, ALREADY_MAX, PREREQUISITE_MISSING, LEVEL_TOO_LOW, INSUFFICIENT_VALOR
     }
 
     public enum CastResult {
@@ -48,6 +48,7 @@ public final class CombatAbilityService {
     }
 
     private final Plugin plugin;
+    private final CombatSkillService combat;
     private final PlayerStatsService stats;
     private final CombatValorService valor;
     private final long baseCost;
@@ -55,6 +56,7 @@ public final class CombatAbilityService {
     private final long costPerRank;
     private final long costPerRankPerTier;
     private final double baseCritMultiplier;
+    private final List<Integer> tierLevelRequirements;
 
     private final Map<UUID, Integer> bloodStreak = new HashMap<>();
     private final Map<UUID, Integer> attackCounter = new HashMap<>();
@@ -62,8 +64,9 @@ public final class CombatAbilityService {
     private final Map<UUID, Long> vitalTouchCooldowns = new HashMap<>();
     private final Set<UUID> magicDamageInFlight = new HashSet<>();
 
-    public CombatAbilityService(Plugin p, PlayerStatsService stats, CombatValorService valor) {
+    public CombatAbilityService(Plugin p, CombatSkillService combat, PlayerStatsService stats, CombatValorService valor) {
         this.plugin = p;
+        this.combat = combat;
         this.stats = stats;
         this.valor = valor;
         this.baseCost = Math.max(1L, p.getConfig().getLong("combat-tree.base-unlock-cost", 20L));
@@ -71,6 +74,27 @@ public final class CombatAbilityService {
         this.costPerRank = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank", 8L));
         this.costPerRankPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank-per-tier", 5L));
         this.baseCritMultiplier = p.getConfig().getDouble("combat.critical-damage-multiplier", 1.5);
+        List<Integer> requirements = p.getConfig().getIntegerList("combat-tree.tier-level-requirements");
+        this.tierLevelRequirements = requirements.isEmpty() ? List.of(0, 15, 35, 60, 90, 130) : requirements;
+    }
+
+    /**
+     * Minimum Combat level required to unlock a node at the given tree tier (tier 1 =
+     * root). Reads {@code combat-tree.tier-level-requirements} (index 0 = tier 1);
+     * tiers past the configured list extrapolate using the last step between two
+     * configured values, clamped to the Combat skill's max level.
+     */
+    public int levelRequirement(int tier) {
+        List<Integer> req = this.tierLevelRequirements;
+        int index = Math.max(0, tier - 1);
+        if (index < req.size()) {
+            return req.get(index);
+        }
+        int lastIndex = req.size() - 1;
+        int last = req.get(lastIndex);
+        int step = lastIndex > 0 ? Math.max(0, last - req.get(lastIndex - 1)) : 0;
+        int extra = index - lastIndex;
+        return Math.min(this.combat.maxLevel(), last + step * extra);
     }
 
     /** Effective critical-damage multiplier (base config value, or Critical Mastery's if unlocked), as a raw multiplier (1.5 = +50%). */
@@ -135,6 +159,9 @@ public final class CombatAbilityService {
         }
         if (!this.prerequisitesMet(p, a)) {
             return PurchaseResult.PREREQUISITE_MISSING;
+        }
+        if (this.combat.progress(p).level() < this.levelRequirement(CombatTreeNode.of(a).tier())) {
+            return PurchaseResult.LEVEL_TOO_LOW;
         }
         long cost = this.nextRankCost(p, a);
         if (!this.valor.withdraw(p, cost)) {

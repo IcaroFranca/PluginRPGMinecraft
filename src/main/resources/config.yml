@@ -57,6 +57,11 @@ combat-tree:
   valor-per-kill-multiplier: 0.3
   # Bonus Blood Points awarded per Combat level gained.
   valor-per-level: 3
+  # Minimum Combat level required to unlock a node at each tree tier (index 0 = tier 1,
+  # the roots; tier 6, the capstone, needs the last value here). On top of Blood
+  # Points + prerequisites, so climbing the tree also means actually leveling Combat,
+  # not just farming currency. Tiers beyond this list extrapolate using the last step.
+  tier-level-requirements: [0, 15, 35, 60, 90, 130]
 mob-visuals:
   # First step toward the planned mob level scaling: multiplies every mob's Max Health
   # (applied once per mob, tracked via a PDC flag so reloads never re-multiply).

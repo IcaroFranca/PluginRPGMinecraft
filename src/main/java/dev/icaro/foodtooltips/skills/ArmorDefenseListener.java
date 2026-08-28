@@ -27,6 +27,7 @@ public final class ArmorDefenseListener implements Listener {
     @EventHandler
     public void join(PlayerJoinEvent e) {
         this.armor.neutralizeVanillaArmor(e.getPlayer());
+        this.armor.applyDefenseTooltip(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.28.2.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.29.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -74,33 +74,46 @@ status aparece no menu "Seus status" (`/skills`).
   dropa exatamente a quantia mostrada no seu card do Bestiário (`awardedCombatXp()`,
   arredondado); mobs fora do catálogo caem num fallback baseado em vida máxima.
   Subir de nível de Combate também dá um bônus fixo.
-- **Ranks e custo por tier**: cada habilidade agora tem seu **próprio** rank
-  máximo (`CombatTreeNode`, campo `maxRank`) — nunca menor que 10, mas alguns
-  nós exigem mais (12/15/20, e o capstone `APEX_WARRIOR` vai até 25) pra serem
-  um grind mais longo sem mudar o quão forte a habilidade fica no rank máximo
-  (mesmo valor final, só espalhado por mais ranks). O custo de cada rank
-  escala tanto com o rank quanto com o *tier* do nó (quão fundo ele está na
-  árvore — raiz = tier 1, calculado automaticamente a partir dos
-  pré-requisitos em `CombatTreeNode`): `custo = (base + custo-por-tier·(tier-1))
-  + (custo-por-rank + custo-por-rank-por-tier·(tier-1))·(rank-1)`, configurável em
-  `combat-tree.*` no `config.yml`. Nós mais profundos (ex.: `APEX_WARRIOR`, tier 6)
-  custam bem mais por rank que os nós-raiz. As fórmulas de efeito (dano, cura,
-  cooldown, etc.) interpolam linearmente do valor de rank 1 ao de rank máximo
-  de cada habilidade (`CombatTreeMath#lerp`, agora recebendo `maxRank` como
-  parâmetro explícito em vez de uma constante global) — ex.: Arremesso de
-  Espada (rank máximo 15) vai de 10% do dano da arma / 30s de recarga no
-  rank 1 até 50% do dano / 3s de recarga no rank 15.
+- **Ranks e custo por tier**: o rank máximo agora é puramente função do
+  *tier* do nó (`CombatTreeNode`, campo `maxRank`) — tier 1 (raízes) vai até
+  10, e cada tier seguinte sobe: 14/18/22/26, com o capstone `APEX_WARRIOR`
+  (tier 6) no maior de todos, 32. Antes o rank máximo variava até dentro de
+  um mesmo tier (10 a 15 lado a lado); agora todo nó no mesmo tier tem o
+  mesmo teto, um progressão mais longa e mais previsível. O custo de cada
+  rank escala tanto com o rank quanto com o tier (raiz = tier 1, calculado
+  automaticamente a partir dos pré-requisitos em `CombatTreeNode`): `custo =
+  (base + custo-por-tier·(tier-1)) + (custo-por-rank + custo-por-rank-por-tier·(tier-1))·(rank-1)`,
+  configurável em `combat-tree.*` no `config.yml`. Nós mais profundos (ex.:
+  `APEX_WARRIOR`, tier 6) custam bem mais por rank que os nós-raiz. As
+  fórmulas de efeito (dano, cura, cooldown, etc.) interpolam linearmente do
+  valor de rank 1 ao de rank máximo de cada habilidade (`CombatTreeMath#lerp`,
+  recebendo `maxRank` como parâmetro explícito).
+- **Nível de Combate mínimo por tier**: além de Blood Points e pré-requisitos,
+  cada tier da árvore agora também exige um Nível de Combate mínimo pra
+  desbloquear/melhorar um nó (`combat-tree.tier-level-requirements` no
+  config.yml — padrão `[0, 15, 35, 60, 90, 130]` pros tiers 1-6;
+  `CombatAbilityService#levelRequirement`, checado em `purchaseRank`). Isso
+  volta um gate de nível que tinha sido removido numa leva anterior (então
+  só Blood Points/pré-requisitos importavam) — dessa vez escalando por tier
+  em vez de ser um valor único pra árvore toda, então subir de verdade no
+  Combate também é necessário pra chegar no topo, não só farmar moeda. A
+  tooltip de cada nó mostra o requisito (✔/✖) junto dos pré-requisitos.
 - **Menu**: `/skills` → "Árvore de Combate" (`CombatTreeMenuService`). Clique
   esquerdo desbloqueia/melhora; shift-clique ativa/desativa passivas
   desbloqueadas; clique direito conjura `ARCANE_SLASH`/`VITAL_TOUCH`.
   Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
   = rank máximo; variante em bloco = habilidade ativa, variante em
   minério/gema = passiva. O botão de voltar fica no canto inferior esquerdo
-  e a cabeça do jogador (moeda/legenda) no canto inferior direito. O
-  preenchimento dos slots vazios é vidro preto (chegou a ser trocado pra
-  carvão pra imitar um "baú de carvão", mas isso escondia todo nó ainda
-  bloqueado — que já usa exatamente o ícone de carvão — dentro do fundo;
-  vidro preto mantém o tom escuro sem colidir com nenhum ícone de estado).
+  e a cabeça do jogador (moeda/legenda) no canto inferior direito.
+  **Formato de montanha**: o fundo do menu não é mais um retângulo uniforme
+  — os slots dentro de uma silhueta de "montanha" (mais estreita no topo,
+  onde fica o capstone, alargando pros ramos na base) são preenchidos com
+  deepslate (rocha), e o resto continua vidro preto ("céu"). Todo nó real já
+  cai dentro da silhueta (`CombatTreeMenuService#isMountain`), então nenhuma
+  habilidade fica "flutuando" fora da montanha — só o visual de fundo mudou,
+  a estrutura de ramos/tiers é a mesma de antes. Deepslate também casa bem
+  tematicamente com o ícone de carvão dos nós bloqueados (igual ao bloco real
+  "Minério de Carvão do Profundo").
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
@@ -148,6 +161,10 @@ status aparece no menu "Seus status" (`/skills`).
   o que parecia um giro "de disco" (plano, de lado). Trocado por
   `rotateX`, que faz a espada tombar pra frente (cambalhota) como um
   arremesso de faca de verdade (`SwordThrowListener`).
+- **Números de dano flutuantes não são mais negrito**: o número de dano
+  crítico (o arco-íris com ✦) usava `TextDecoration.BOLD` em cada caractere;
+  removido (`MobVisualService#criticalNumber`). O número normal (não
+  crítico) já não era negrito.
 
 ### Bugs pré-existentes corrigidos nesta mudança
 
@@ -220,12 +237,13 @@ skills estiverem prontas:
   Resistência a empurrão (perk do Netherite) não é mexida — só
   ARMOR/ARMOR_TOUGHNESS.
 
-  **Limitação conhecida**: a tooltip do item de armadura em si (tanto no
-  inventário quanto no slot equipado dentro de "Status & Equipamento") ainda
-  mostra os atributos vanilla originais (`+X Armor`) como texto — são só
-  cosméticos agora, sem efeito real, mas ainda aparecem escritos no item.
-  Corrigir isso exigiria reescrever a lore/flags do item de verdade
-  (mexendo no NBT do item equipado), o que não foi feito nesta leva.
+  **A tooltip do item mostra a Defesa de verdade**: `ArmorDefenseService#applyDefenseTooltip`
+  reescreve a peça de armadura em si (equipada, na mochila, ou na mão
+  secundária — em qualquer slot do inventário do jogador) pra esconder os
+  atributos vanilla (`ItemFlag.HIDE_ATTRIBUTES`) e mostrar em vez disso uma
+  linha "Defesa: +N" em verde, igual ao número que realmente conta. Roda no
+  join e a cada tick do HUD, uma vez por item (guardado por uma flag na PDC
+  do próprio item, então não sobrescreve encantos/renomes feitos depois).
 
 ## Nível Global
 

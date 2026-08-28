@@ -4,9 +4,10 @@ import org.bukkit.Material;
 
 /**
  * Every combat ability, active or passive. Unlocking/upgrading a node is
- * gated purely by Blood Points and the tree's prerequisite chain (see
- * {@link CombatTreeNode}), handled by {@link CombatAbilityService} — there
- * is no separate Combat-level requirement.
+ * gated by Blood Points, the tree's prerequisite chain (see {@link
+ * CombatTreeNode}), and a minimum Combat level per tree tier (see {@link
+ * CombatAbilityService#levelRequirement}) — handled by {@link
+ * CombatAbilityService}.
  */
 public enum CombatAbility {
     RUTHLESS_STRIKES(Material.FLINT, "Golpes Implacáveis", "Ruthless Strikes"),

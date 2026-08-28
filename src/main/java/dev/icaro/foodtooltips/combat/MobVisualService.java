@@ -12,7 +12,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -167,11 +166,11 @@ public final class MobVisualService {
 
     private Component criticalNumber(String value) {
         TextColor[] colors = new TextColor[]{NamedTextColor.RED, NamedTextColor.GOLD, NamedTextColor.YELLOW, NamedTextColor.GREEN, NamedTextColor.AQUA, NamedTextColor.LIGHT_PURPLE};
-        Component out = Component.text((String)"\u2726 ", (TextColor)NamedTextColor.GOLD).decorate(TextDecoration.BOLD);
+        Component out = Component.text((String)"\u2726 ", (TextColor)NamedTextColor.GOLD);
         for (int i = 0; i < value.length(); ++i) {
-            out = out.append(Component.text((String)String.valueOf(value.charAt(i)), (TextColor)colors[i % colors.length]).decorate(TextDecoration.BOLD));
+            out = out.append(Component.text((String)String.valueOf(value.charAt(i)), (TextColor)colors[i % colors.length]));
         }
-        return out.append(Component.text((String)" \u2726", (TextColor)NamedTextColor.LIGHT_PURPLE).decorate(TextDecoration.BOLD));
+        return out.append(Component.text((String)" \u2726", (TextColor)NamedTextColor.LIGHT_PURPLE));
     }
 
     private String number(double value) {

@@ -28,13 +28,18 @@ import org.bukkit.inventory.meta.SkullMeta;
  * Renders and drives the combat ability tree: a 54-slot chest laying out
  * every {@link CombatAbility} at the slot defined by its {@link
  * CombatTreeNode}, with branches read top (capstone) to bottom (roots).
+ * Every node sits inside a deepslate "mountain" silhouette ({@link
+ * #isMountain}) against a black-glass background — the tree's actual
+ * branch/tier layout didn't change, only the backdrop drawn behind it.
  *
- * <p>Left click unlocks/upgrades a node (spends Blood Points). Shift-click toggles
- * an unlocked passive on/off. Right click casts a menu-triggered active
- * ability (Arcane Slash, Vital Touch). The back button sits bottom-left, a
- * TNT reset button (click twice to confirm — refunds every Blood Point
- * spent, see {@link CombatAbilityService#resetTree}) sits right next to it,
- * and the player's head (currency/status header) sits bottom-right.
+ * <p>Left click unlocks/upgrades a node (spends Blood Points, requires a
+ * minimum Combat level per tier — see {@link CombatAbilityService#levelRequirement}).
+ * Shift-click toggles an unlocked passive on/off. Right click casts a
+ * menu-triggered active ability (Arcane Slash, Vital Touch). The back
+ * button sits bottom-left, a TNT reset button (click twice to confirm —
+ * refunds every Blood Point spent, see {@link CombatAbilityService#resetTree})
+ * sits right next to it, and the player's head (currency/status header)
+ * sits bottom-right.
  */
 public final class CombatTreeMenuService {
     private static final int BACK_SLOT = 45;
@@ -66,14 +71,28 @@ public final class CombatTreeMenuService {
         return map;
     }
 
+    // Column range (inclusive) of the mountain silhouette per row (row 0 = top, the
+    // capstone's peak; row 5 = bottom, the roots' row). Every registered node slot
+    // falls inside its row's range, so no ability ever renders floating outside the rock.
+    private static final int[] MOUNTAIN_MIN_COL = {3, 2, 1, 0, 0, 2};
+    private static final int[] MOUNTAIN_MAX_COL = {5, 6, 7, 8, 8, 6};
+
+    private static boolean isMountain(int row, int col) {
+        return col >= MOUNTAIN_MIN_COL[row] && col <= MOUNTAIN_MAX_COL[row];
+    }
+
     public void open(Player p) {
         Language l = Language.of(p);
         Inventory v = Bukkit.createInventory(null, 54, l.choose("Árvore de Combate", "Combat Tree"));
-        // Not Material.COAL: locked passive nodes already use that icon (see #stateIcon below),
-        // so a coal filler made every still-locked node vanish into the background.
-        ItemStack filler = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
+        // Mountain silhouette: deepslate "rock" inside the shape (every real node slot
+        // falls inside it — see #isMountain), black glass "sky" outside it. Not
+        // Material.COAL for the rock: locked passive nodes already use that icon (see
+        // #stateIcon below), so a coal filler made every still-locked node vanish into
+        // the background; deepslate reads as rock without colliding with any node icon.
+        ItemStack sky = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
+        ItemStack rock = this.item(Material.DEEPSLATE, " ", List.of());
         for (int i = 0; i < 54; i++) {
-            v.setItem(i, filler);
+            v.setItem(i, isMountain(i / 9, i % 9) ? rock : sky);
         }
         v.setItem(HEADER_SLOT, this.headerItem(p, l));
         v.setItem(BACK_SLOT, this.item(Material.BARRIER, l.choose("Voltar às skills", "Back to skills"), List.of()));
@@ -169,6 +188,7 @@ public final class CombatTreeMenuService {
             case SUCCESS -> p.sendActionBar(this.text("✦ " + ability.name(l == Language.PT) + " " + l.choose("melhorada!", "upgraded!") + " (" + this.abilities.rank(p, ability) + "/" + this.abilities.maxRank(ability) + ")", NamedTextColor.GREEN));
             case ALREADY_MAX -> p.sendActionBar(this.text(l.choose("Já está no nível máximo.", "Already at max level."), NamedTextColor.GRAY));
             case PREREQUISITE_MISSING -> p.sendActionBar(this.text(l.choose("Desbloqueie os pré-requisitos primeiro.", "Unlock the prerequisites first."), NamedTextColor.RED));
+            case LEVEL_TOO_LOW -> p.sendActionBar(this.text(l.choose("Nível de Combate insuficiente.", "Combat level too low."), NamedTextColor.RED));
             case INSUFFICIENT_VALOR -> p.sendActionBar(this.text(l.choose("Pontos de Sangue insuficientes.", "Not enough Blood Points."), NamedTextColor.RED));
         }
     }
@@ -180,6 +200,7 @@ public final class CombatTreeMenuService {
                 this.text(l.choose("Nível de Combate: ", "Combat Level: ") + level, NamedTextColor.GREEN),
                 this.text(CURRENCY_SYMBOL + " " + l.choose("Pontos de Sangue: ", "Blood Points: ") + this.valor.format(balance), NamedTextColor.DARK_RED),
                 this.text(l.choose("Ganhe matando mobs hostis (veja o Bestiário) e ao subir de nível de Combate.", "Earn them by killing hostile mobs (see the Bestiary) and leveling up Combat."), NamedTextColor.GRAY),
+                this.text(l.choose("Nós mais fundos na árvore também exigem um Nível de Combate mínimo.", "Deeper nodes in the tree also require a minimum Combat level."), NamedTextColor.GRAY),
                 Component.empty(),
                 this.text(l.choose("🔒 Carvão: bloqueada", "🔒 Coal: locked"), NamedTextColor.DARK_GRAY),
                 this.text(l.choose("✔ Esmeralda: desbloqueada", "✔ Emerald: unlocked"), NamedTextColor.GREEN),
@@ -226,7 +247,9 @@ public final class CombatTreeMenuService {
         boolean unlocked = rank > 0;
         boolean maxed = rank >= max;
         boolean prereqOk = this.abilities.prerequisitesMet(p, ability);
-        boolean purchasable = !maxed && prereqOk;
+        int levelRequired = this.abilities.levelRequirement(node.tier());
+        boolean levelOk = this.combat.progress(p).level() >= levelRequired;
+        boolean purchasable = !maxed && prereqOk && levelOk;
         boolean active = node.kind() != CombatTreeNode.Kind.PASSIVE;
 
         NamedTextColor nameColor = maxed ? NamedTextColor.GOLD : unlocked ? NamedTextColor.GREEN : purchasable ? NamedTextColor.YELLOW : NamedTextColor.GRAY;
@@ -248,6 +271,9 @@ public final class CombatTreeMenuService {
                 boolean ok = this.abilities.unlocked(p, prereq);
                 lore.add(this.text((ok ? "✔ " : "✖ ") + l.choose("Requer: ", "Requires: ") + prereq.name(l == Language.PT), ok ? NamedTextColor.DARK_GREEN : NamedTextColor.RED));
             }
+        }
+        if (levelRequired > 0) {
+            lore.add(this.text((levelOk ? "✔ " : "✖ ") + l.choose("Requer Nível de Combate: ", "Requires Combat Level: ") + levelRequired, levelOk ? NamedTextColor.DARK_GREEN : NamedTextColor.RED));
         }
         if (maxed) {
             lore.add(this.text(l.choose("NÍVEL MÁXIMO", "MAX LEVEL"), NamedTextColor.GOLD));

@@ -76,7 +76,7 @@ extends JavaPlugin {
         CombatSkillService combat = new CombatSkillService((Plugin)this);
         GeneralSkillService general = new GeneralSkillService();
         CombatValorService valor = new CombatValorService((Plugin)this);
-        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, stats, valor);
+        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
         ShopService shop = new ShopService((Plugin)this, economy);
@@ -214,6 +214,7 @@ extends JavaPlugin {
             double healthRegenMultiplier = stats.stats((Player)p).healthRegen() / 100.0;
             stats.regenHealth((Player)p, naturalHealthRegenPerSecond * healthRegenMultiplier * (double)ticks / 20.0);
             armor.neutralizeVanillaArmor((Player)p);
+            armor.applyDefenseTooltip((Player)p);
             hud.show((Player)p, stats.stats((Player)p), armor.defense((Player)p));
         }), 1L, ticks);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, this.visuals::tick, 1L, Math.max(1L, this.getConfig().getLong("mob-visuals.update-ticks", 3L)));
@@ -228,6 +229,7 @@ extends JavaPlugin {
             combat.applyAttackSpeed((Player)p);
             stats.applySwingRange((Player)p);
             armor.neutralizeVanillaArmor((Player)p);
+            armor.applyDefenseTooltip((Player)p);
             bestiaryProgress.applyBonusHealth((Player)p);
             global.migrate((Player)p);
             foodListener.refresh((Player)p);
