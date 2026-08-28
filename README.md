@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.29.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.29.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -104,16 +104,9 @@ status aparece no menu "Seus status" (`/skills`).
   Ícone por estado: carvão = bloqueada, esmeralda = desbloqueada, diamante
   = rank máximo; variante em bloco = habilidade ativa, variante em
   minério/gema = passiva. O botão de voltar fica no canto inferior esquerdo
-  e a cabeça do jogador (moeda/legenda) no canto inferior direito.
-  **Formato de montanha**: o fundo do menu não é mais um retângulo uniforme
-  — os slots dentro de uma silhueta de "montanha" (mais estreita no topo,
-  onde fica o capstone, alargando pros ramos na base) são preenchidos com
-  deepslate (rocha), e o resto continua vidro preto ("céu"). Todo nó real já
-  cai dentro da silhueta (`CombatTreeMenuService#isMountain`), então nenhuma
-  habilidade fica "flutuando" fora da montanha — só o visual de fundo mudou,
-  a estrutura de ramos/tiers é a mesma de antes. Deepslate também casa bem
-  tematicamente com o ícone de carvão dos nós bloqueados (igual ao bloco real
-  "Minério de Carvão do Profundo").
+  e a cabeça do jogador (moeda/legenda) no canto inferior direito. O
+  preenchimento dos slots vazios é vidro preto (não carvão — nós bloqueados
+  já usam esse ícone, então um filler de carvão os esconderia no fundo).
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
@@ -161,6 +154,19 @@ status aparece no menu "Seus status" (`/skills`).
   o que parecia um giro "de disco" (plano, de lado). Trocado por
   `rotateX`, que faz a espada tombar pra frente (cambalhota) como um
   arremesso de faca de verdade (`SwordThrowListener`).
+- **Arremesso de Espada corrigido no Bedrock**: `BedrockSwordThrowListener`
+  detectava jogador de Bedrock só via `FloodgateApi` por reflexão — se o
+  jar do Floodgate não estiver instalado *neste* servidor (por exemplo,
+  Geyser só no proxy, ou um setup sem Floodgate) a detecção sempre falhava
+  silenciosamente e o arremesso nunca disparava, mesmo com os controles
+  certos. Agora tenta 3 sinais em cascata: (1) a assinatura de UUID que o
+  Floodgate sempre gera (deriva o UUID só do XUID de 64 bits, zerando os
+  64 bits superiores — funciona mesmo sem o jar do Floodgate no classpath,
+  cobre o setup mais comum), (2) `FloodgateApi#isFloodgatePlayer` se o
+  plugin Floodgate estiver instalado aqui, (3) `GeyserApi#connectionByUuid`
+  se for o Geyser-Spigot (funciona mesmo sem Floodgate). Todos por reflexão
+  (sem dependência de compilação), então nenhum deles precisa estar
+  presente pro plugin compilar ou rodar.
 - **Números de dano flutuantes não são mais negrito**: o número de dano
   crítico (o arco-íris com ✦) usava `TextDecoration.BOLD` em cada caractere;
   removido (`MobVisualService#criticalNumber`). O número normal (não

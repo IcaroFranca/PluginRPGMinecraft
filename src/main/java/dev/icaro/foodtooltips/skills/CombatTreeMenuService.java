@@ -28,9 +28,6 @@ import org.bukkit.inventory.meta.SkullMeta;
  * Renders and drives the combat ability tree: a 54-slot chest laying out
  * every {@link CombatAbility} at the slot defined by its {@link
  * CombatTreeNode}, with branches read top (capstone) to bottom (roots).
- * Every node sits inside a deepslate "mountain" silhouette ({@link
- * #isMountain}) against a black-glass background — the tree's actual
- * branch/tier layout didn't change, only the backdrop drawn behind it.
  *
  * <p>Left click unlocks/upgrades a node (spends Blood Points, requires a
  * minimum Combat level per tier — see {@link CombatAbilityService#levelRequirement}).
@@ -71,28 +68,14 @@ public final class CombatTreeMenuService {
         return map;
     }
 
-    // Column range (inclusive) of the mountain silhouette per row (row 0 = top, the
-    // capstone's peak; row 5 = bottom, the roots' row). Every registered node slot
-    // falls inside its row's range, so no ability ever renders floating outside the rock.
-    private static final int[] MOUNTAIN_MIN_COL = {3, 2, 1, 0, 0, 2};
-    private static final int[] MOUNTAIN_MAX_COL = {5, 6, 7, 8, 8, 6};
-
-    private static boolean isMountain(int row, int col) {
-        return col >= MOUNTAIN_MIN_COL[row] && col <= MOUNTAIN_MAX_COL[row];
-    }
-
     public void open(Player p) {
         Language l = Language.of(p);
         Inventory v = Bukkit.createInventory(null, 54, l.choose("Árvore de Combate", "Combat Tree"));
-        // Mountain silhouette: deepslate "rock" inside the shape (every real node slot
-        // falls inside it — see #isMountain), black glass "sky" outside it. Not
-        // Material.COAL for the rock: locked passive nodes already use that icon (see
-        // #stateIcon below), so a coal filler made every still-locked node vanish into
-        // the background; deepslate reads as rock without colliding with any node icon.
-        ItemStack sky = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
-        ItemStack rock = this.item(Material.DEEPSLATE, " ", List.of());
+        // Not Material.COAL: locked passive nodes already use that icon (see #stateIcon below),
+        // so a coal filler made every still-locked node vanish into the background.
+        ItemStack filler = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
         for (int i = 0; i < 54; i++) {
-            v.setItem(i, isMountain(i / 9, i % 9) ? rock : sky);
+            v.setItem(i, filler);
         }
         v.setItem(HEADER_SLOT, this.headerItem(p, l));
         v.setItem(BACK_SLOT, this.item(Material.BARRIER, l.choose("Voltar às skills", "Back to skills"), List.of()));
