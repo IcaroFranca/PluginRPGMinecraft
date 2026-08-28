@@ -29,6 +29,7 @@ public final class PlayerStatsService {
     private final NamespacedKey maxVitality;
     private final NamespacedKey swingRangeKey;
     private final double base;
+    private final double baseHealth;
     private final double baseVitality;
     private final double ferocity;
     private final double ferocityCap;
@@ -47,6 +48,7 @@ public final class PlayerStatsService {
 
     public PlayerStatsService(Plugin p) {
         this.base = p.getConfig().getDouble("stats.base-mana", 100.0);
+        this.baseHealth = Math.max(1.0, p.getConfig().getDouble("stats.base-health", 100.0));
         this.baseVitality = p.getConfig().getDouble("stats.base-vitality", 100.0);
         this.ferocityCap = p.getConfig().getDouble("stats.ferocity-cap", 500.0);
         this.ferocity = clamp(p.getConfig().getDouble("stats.base-ferocity", 0.0), 0.0, this.ferocityCap);
@@ -187,6 +189,19 @@ public final class PlayerStatsService {
         }
         this.setVitality(p, current - amount);
         return true;
+    }
+
+    /**
+     * Sets the player's base Max Health (vanilla default is 20; this plugin's default
+     * is {@code stats.base-health}, 100). Bonuses on top (Bestiary milestones, Global
+     * Level's HP-per-level) are transient modifiers added separately, so they compose
+     * correctly on top of whichever base is set here regardless of call order.
+     */
+    public void applyBaseHealth(Player p) {
+        AttributeInstance a = p.getAttribute(Attribute.MAX_HEALTH);
+        if (a != null) {
+            a.setBaseValue(this.baseHealth);
+        }
     }
 
     /**

@@ -31,13 +31,17 @@ import org.bukkit.inventory.meta.SkullMeta;
  *
  * <p>Left click unlocks/upgrades a node (spends Blood Points). Shift-click toggles
  * an unlocked passive on/off. Right click casts a menu-triggered active
- * ability (Arcane Slash, Vital Touch). The back button sits bottom-left and
- * the player's head (currency/status header) sits bottom-right.
+ * ability (Arcane Slash, Vital Touch). The back button sits bottom-left, a
+ * TNT reset button (click twice to confirm — refunds every Blood Point
+ * spent, see {@link CombatAbilityService#resetTree}) sits right next to it,
+ * and the player's head (currency/status header) sits bottom-right.
  */
 public final class CombatTreeMenuService {
     private static final int BACK_SLOT = 45;
+    private static final int RESET_SLOT = 46;
     private static final int HEADER_SLOT = 53;
     private static final String CURRENCY_SYMBOL = "🩸";
+    private static final long RESET_CONFIRM_WINDOW_MILLIS = 10_000L;
     private static final Map<Integer, CombatAbility> SLOT_TO_ABILITY = buildSlotMap();
 
     private final CombatSkillService combat;
@@ -45,6 +49,7 @@ public final class CombatTreeMenuService {
     private final CombatValorService valor;
     private final Consumer<Player> backCallback;
     private final Set<UUID> viewing = new HashSet<>();
+    private final Map<UUID, Long> resetConfirm = new HashMap<>();
 
     public CombatTreeMenuService(CombatSkillService combat, CombatAbilityService abilities, CombatValorService valor, Consumer<Player> backCallback) {
         this.combat = combat;
@@ -72,6 +77,7 @@ public final class CombatTreeMenuService {
         }
         v.setItem(HEADER_SLOT, this.headerItem(p, l));
         v.setItem(BACK_SLOT, this.item(Material.BARRIER, l.choose("Voltar às skills", "Back to skills"), List.of()));
+        v.setItem(RESET_SLOT, this.resetItem(p, l));
         for (Map.Entry<Integer, CombatAbility> entry : SLOT_TO_ABILITY.entrySet()) {
             v.setItem(entry.getKey(), this.nodeItem(p, entry.getValue(), l));
         }
@@ -91,6 +97,11 @@ public final class CombatTreeMenuService {
         if (slot == BACK_SLOT) {
             this.close(p);
             this.backCallback.accept(p);
+            return true;
+        }
+        if (slot == RESET_SLOT) {
+            this.handleReset(p, Language.of(p));
+            this.open(p);
             return true;
         }
         CombatAbility ability = SLOT_TO_ABILITY.get(slot);
@@ -134,6 +145,24 @@ public final class CombatTreeMenuService {
         }
     }
 
+    /** Second click within {@link #RESET_CONFIRM_WINDOW_MILLIS} of the first actually resets; the first just arms it. */
+    private void handleReset(Player p, Language l) {
+        long now = System.currentTimeMillis();
+        Long expiry = this.resetConfirm.get(p.getUniqueId());
+        if (expiry != null && expiry > now) {
+            this.resetConfirm.remove(p.getUniqueId());
+            long refund = this.abilities.resetTree(p);
+            if (refund > 0L) {
+                p.sendActionBar(this.text("✦ " + l.choose("Árvore resetada! +", "Tree reset! +") + this.valor.format(refund) + " " + CURRENCY_SYMBOL, NamedTextColor.GREEN));
+            } else {
+                p.sendActionBar(this.text(l.choose("Nada para resetar.", "Nothing to reset."), NamedTextColor.GRAY));
+            }
+            return;
+        }
+        this.resetConfirm.put(p.getUniqueId(), now + RESET_CONFIRM_WINDOW_MILLIS);
+        p.sendActionBar(this.text(l.choose("Clique de novo para confirmar o reset (10s)!", "Click again to confirm the reset (10s)!"), NamedTextColor.RED));
+    }
+
     private void handlePurchase(Player p, CombatAbility ability, Language l) {
         CombatAbilityService.PurchaseResult result = this.abilities.purchaseRank(p, ability);
         switch (result) {
@@ -159,12 +188,24 @@ public final class CombatTreeMenuService {
                 Component.empty(),
                 this.text(l.choose("Clique: desbloquear/melhorar", "Click: unlock/upgrade"), NamedTextColor.YELLOW),
                 this.text(l.choose("Shift + clique: ativar/desativar", "Shift + click: enable/disable"), NamedTextColor.YELLOW),
-                this.text(l.choose("Clique direito: usar (habilidades ativas)", "Right click: cast (active abilities)"), NamedTextColor.YELLOW));
+                this.text(l.choose("Clique direito: usar (habilidades ativas)", "Right click: cast (active abilities)"), NamedTextColor.YELLOW),
+                this.text(l.choose("Bloco de TNT: resetar a árvore (devolve os Pontos de Sangue)", "TNT block: reset the tree (refunds Blood Points)"), NamedTextColor.YELLOW));
         ItemStack i = this.item(Material.PLAYER_HEAD, l.choose("Sua Árvore de Combate", "Your Combat Tree"), lore);
         SkullMeta m = (SkullMeta) i.getItemMeta();
         m.setOwningPlayer((OfflinePlayer) p);
         i.setItemMeta(m);
         return i;
+    }
+
+    private ItemStack resetItem(Player p, Language l) {
+        boolean armed = this.resetConfirm.getOrDefault(p.getUniqueId(), 0L) > System.currentTimeMillis();
+        List<Component> lore = List.of(
+                this.text(l.choose("Reseta todos os níveis da árvore e devolve todos os Pontos de Sangue gastos.", "Resets every tree level and refunds every Blood Point spent."), NamedTextColor.GRAY),
+                Component.empty(),
+                armed
+                        ? this.text(l.choose("Clique de novo para confirmar!", "Click again to confirm!"), NamedTextColor.RED)
+                        : this.text(l.choose("Clique para resetar (pede confirmação).", "Click to reset (asks for confirmation)."), NamedTextColor.YELLOW));
+        return this.item(Material.TNT, l.choose("Resetar Árvore", "Reset Tree"), lore, armed ? NamedTextColor.RED : NamedTextColor.GOLD);
     }
 
     /** Locked → coal, unlocked → emerald, maxed → diamond; block variant = active, item variant = passive. */

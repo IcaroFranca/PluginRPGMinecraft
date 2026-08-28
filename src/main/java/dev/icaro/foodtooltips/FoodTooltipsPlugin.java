@@ -25,6 +25,8 @@ import dev.icaro.foodtooltips.shop.PortalService;
 import dev.icaro.foodtooltips.shop.ShopItemListener;
 import dev.icaro.foodtooltips.shop.ShopMenuListener;
 import dev.icaro.foodtooltips.shop.ShopService;
+import dev.icaro.foodtooltips.skills.ArmorDefenseListener;
+import dev.icaro.foodtooltips.skills.ArmorDefenseService;
 import dev.icaro.foodtooltips.skills.BackpackListener;
 import dev.icaro.foodtooltips.skills.BackpackService;
 import dev.icaro.foodtooltips.skills.BedrockSwordThrowListener;
@@ -83,7 +85,8 @@ extends JavaPlugin {
         MiningMenuService mining = new MiningMenuService(gems);
         GlobalLevelService global = new GlobalLevelService((Plugin)this, combat, general, bestiaryProgress);
         stats.global(global);
-        SkillsMenuService menus = new SkillsMenuService(combat, general, stats, abilities, mining, global);
+        ArmorDefenseService armor = new ArmorDefenseService();
+        SkillsMenuService menus = new SkillsMenuService(combat, general, stats, abilities, mining, global, armor);
         this.backpacks = new BackpackService((Plugin)this, combat, general);
         menus.backpacks(this.backpacks);
         BestiaryMenuService bestiary = new BestiaryMenuService(bestiaryProgress, economy, valor);
@@ -112,7 +115,9 @@ extends JavaPlugin {
         pm.registerEvents((Listener)gems, (Plugin)this);
         pm.registerEvents((Listener)new MiningMenuListener(mining, menus, gems), (Plugin)this);
         pm.registerEvents((Listener)new BestiaryListener(bestiary), (Plugin)this);
-        pm.registerEvents((Listener)new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor), (Plugin)this);
+        CombatListener combatListener = new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor);
+        pm.registerEvents((Listener)combatListener, (Plugin)this);
+        pm.registerEvents((Listener)new ArmorDefenseListener(armor), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
@@ -208,17 +213,20 @@ extends JavaPlugin {
             stats.regenVitality((Player)p, vitalityRegen);
             double healthRegenMultiplier = stats.stats((Player)p).healthRegen() / 100.0;
             stats.regenHealth((Player)p, naturalHealthRegenPerSecond * healthRegenMultiplier * (double)ticks / 20.0);
-            hud.show((Player)p, stats.stats((Player)p), general.defense((Player)p));
+            hud.show((Player)p, stats.stats((Player)p), armor.defense((Player)p));
         }), 1L, ticks);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, this.visuals::tick, 1L, Math.max(1L, this.getConfig().getLong("mob-visuals.update-ticks", 3L)));
         for (World w : this.getServer().getWorlds()) {
             for (LivingEntity e : w.getLivingEntities()) {
+                combatListener.scaleMobHealth(e);
                 this.visuals.track(e);
             }
         }
         this.getServer().getOnlinePlayers().forEach(p -> {
+            stats.applyBaseHealth((Player)p);
             combat.applyAttackSpeed((Player)p);
             stats.applySwingRange((Player)p);
+            armor.neutralizeVanillaArmor((Player)p);
             bestiaryProgress.applyBonusHealth((Player)p);
             global.migrate((Player)p);
             foodListener.refresh((Player)p);

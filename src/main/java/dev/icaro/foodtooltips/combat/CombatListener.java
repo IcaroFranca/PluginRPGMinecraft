@@ -25,6 +25,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Enemy;
@@ -45,6 +46,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -65,6 +67,8 @@ public final class CombatListener implements Listener {
     private final double critMultiplier;
     private final double hpXp;
     private final double levelXp;
+    private final double mobHealthMultiplier;
+    private final NamespacedKey hpScaledKey = new NamespacedKey("foodtooltips", "hp_scaled");
 
     public CombatListener(Plugin p, CombatSkillService c, MobVisualService v, BestiaryProgressService b, SkillProgressBarService bar,
                            CombatAbilityService abilityService, EconomyService economyService, GlobalLevelService global,
@@ -82,11 +86,36 @@ public final class CombatListener implements Listener {
         this.critMultiplier = p.getConfig().getDouble("combat.critical-damage-multiplier", 1.5);
         this.hpXp = p.getConfig().getDouble("combat.hostile-xp-health-multiplier", 2.0);
         this.levelXp = p.getConfig().getDouble("combat.hostile-xp-level-multiplier", 3.0);
+        this.mobHealthMultiplier = Math.max(1.0, p.getConfig().getDouble("mob-visuals.health-multiplier", 5.0));
     }
 
     @EventHandler
     public void spawn(CreatureSpawnEvent e) {
+        this.scaleMobHealth(e.getEntity());
         Bukkit.getScheduler().runTask(this.plugin, () -> this.visuals.track(e.getEntity()));
+    }
+
+    /**
+     * First step toward the planned mob level scaling: every mob's Max Health is
+     * multiplied by {@code mob-visuals.health-multiplier} (default 5). Idempotent via
+     * a PDC flag so re-running it (plugin reload picking up already-spawned mobs)
+     * never re-multiplies; scales current health proportionally so mid-fight mobs
+     * keep their health fraction instead of snapping to full.
+     */
+    public void scaleMobHealth(LivingEntity e) {
+        if (e instanceof Player || e.getPersistentDataContainer().has(this.hpScaledKey, PersistentDataType.BYTE)) {
+            return;
+        }
+        AttributeInstance a = e.getAttribute(Attribute.MAX_HEALTH);
+        if (a == null) {
+            return;
+        }
+        double oldMax = a.getValue();
+        double fraction = oldMax > 0.0 ? e.getHealth() / oldMax : 1.0;
+        a.setBaseValue(a.getBaseValue() * this.mobHealthMultiplier);
+        double newMax = a.getValue();
+        e.setHealth(Math.max(0.0, Math.min(newMax, fraction * newMax)));
+        e.getPersistentDataContainer().set(this.hpScaledKey, PersistentDataType.BYTE, (byte) 1);
     }
 
     @EventHandler
@@ -248,6 +277,7 @@ public final class CombatListener implements Listener {
 
     @EventHandler
     public void join(PlayerJoinEvent e) {
+        this.stats.applyBaseHealth(e.getPlayer());
         this.combat.applyAttackSpeed(e.getPlayer());
         this.stats.applySwingRange(e.getPlayer());
         this.bestiary.applyBonusHealth(e.getPlayer());

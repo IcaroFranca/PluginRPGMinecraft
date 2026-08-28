@@ -1,4 +1,7 @@
 stats:
+  # Player default Max Health (vanilla's own default is 20). Bestiary milestone bonuses
+  # and Global Level's HP-per-level still add on top of this.
+  base-health: 100.0
   base-mana: 100.0
   mana-regeneration-per-second: 2.0
   # Vitality is a separate resource pool spent by healing actives (e.g. Vital Touch).
@@ -55,6 +58,9 @@ combat-tree:
   # Bonus Blood Points awarded per Combat level gained.
   valor-per-level: 3
 mob-visuals:
+  # First step toward the planned mob level scaling: multiplies every mob's Max Health
+  # (applied once per mob, tracked via a PDC flag so reloads never re-multiply).
+  health-multiplier: 5.0
   # Text Display view range uses 64-block units: 0.25 = approximately 16 blocks.
   label-view-range: 0.12
   damage-view-range: 0.25

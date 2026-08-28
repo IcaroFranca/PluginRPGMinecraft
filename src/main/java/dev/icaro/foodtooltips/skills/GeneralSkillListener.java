@@ -33,7 +33,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -44,7 +43,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
@@ -180,14 +178,8 @@ implements Listener {
         }
     }
 
-    @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
-    public void defense(EntityDamageEvent e) {
-        Entity entity = e.getEntity();
-        if (entity instanceof Player) {
-            Player p = (Player)entity;
-            e.setDamage(e.getDamage() * (1.0 - this.skills.damageReduction(p)));
-        }
-    }
+    // Incoming-damage reduction from Defense moved to ArmorDefenseListener now that
+    // Defense comes from equipped armor instead of Mining level.
 
     @EventHandler(priority=EventPriority.HIGHEST, ignoreCancelled=true)
     public void careful(PlayerItemDamageEvent e) {

@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.27.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.28.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -135,6 +135,14 @@ status aparece no menu "Seus status" (`/skills`).
   `SOUL_HARVEST` → Health Regen, `UNDYING_WILL` → Vitalidade máxima,
   `SECOND_WIND` → Mending. Cada nó afetado mostra a linha extra no tooltip
   (`statPreview`) junto dos bônus que já tinha.
+- **Resetar a árvore**: novo botão de TNT no menu (`CombatTreeMenuService`,
+  ao lado do botão de voltar) — clique uma vez pra armar, clique de novo
+  em até 10s pra confirmar. Zera o nível de toda habilidade e devolve
+  **integralmente** os Pontos de Sangue gastos (mesma fórmula por tier de
+  `nextRankCost`, somada por `CombatAbilityService#resetTree`), sem custo
+  extra. Existe principalmente porque toda vez que uma leva desta rebalanceia
+  fórmulas/ranks máximos, quem já tinha investido ficava preso na build
+  antiga sem jeito de reorganizar.
 - **Arremesso de Espada gira pra frente, não mais de lado**: o `ItemDisplay`
   usado no voo da espada rodava em torno do eixo Z (`Quaternionf#rotateZ`),
   o que parecia um giro "de disco" (plano, de lado). Trocado por
@@ -166,6 +174,54 @@ descompilação original que só o compilador real pegava.
 Além disso, `CombatTreeMath` (a matemática da árvore — curva de custo,
 Ferocity, fórmulas de escala por rank) é puro Java sem dependência do
 Bukkit e roda com testes próprios (84 checks) direto nesta sandbox.
+
+## Vida e Defesa: base de 100 HP, mobs 5× mais tanques, Defesa vem da armadura
+
+Primeiro passo do "mob level scaling" planejado para depois que todas as
+skills estiverem prontas:
+
+- **HP padrão do jogador agora é 100** (`stats.base-health` no config.yml,
+  antes o padrão vanilla de 20) — `PlayerStatsService#applyBaseHealth`, chamado
+  no join. Os bônus que já existiam (milestones do Bestiário, HP por Nível
+  Global) continuam somando em cima normalmente, sem mudança de comportamento
+  ali.
+- **Todo mob tem a Vida Máxima multiplicada por 5** (`mob-visuals.health-multiplier`
+  no config.yml) — `CombatListener#scaleMobHealth`, aplicado uma vez por mob
+  (guardado por uma flag na PDC do mob, então recarregar o plugin nunca
+  multiplica de novo) tanto em spawns novos quanto nos mobs já existentes no
+  mundo. Só a vida sobe — XP e Pontos de Sangue dropados por mobs sem entrada
+  no Bestiário também sobem proporcionalmente (dependem da vida máxima), mas
+  os valores fixos do Bestiário **não** mudam nesta leva.
+- **Defesa agora vem só da armadura equipada, não mais do vanilla nem do
+  nível de Mineração** (era um valor incorreto herdado da descompilação —
+  `GeneralSkillService#defense` na verdade retornava o nível de Mineração).
+  `ArmorDefenseService` soma um valor fixo por peça/material e
+  `ArmorDefenseListener` zera o atributo vanilla `ARMOR`/`ARMOR_TOUGHNESS`
+  no join e sempre que o equipamento muda (`PlayerArmorChangeEvent`), então
+  só esse número conta pra redução de dano (mesma curva de antes:
+  `defesa / (defesa + 100)`). Valores por peça (capacete/peitoral/calça/bota):
+
+  | Material | Capacete | Peitoral | Calça | Bota | Total |
+  |---|---|---|---|---|---|
+  | Couro | 5 | 15 | 10 | 5 | 35 |
+  | Corrente | 9 | 23 | 18 | 8 | 58 |
+  | Ouro | 10 | 25 | 15 | 5 | 55 |
+  | Ferro | 12 | 30 | 25 | 10 | 77 |
+  | Diamante | 15 | 40 | 30 | 15 | 100 |
+  | Netherite | 18 | 46 | 35 | 18 | 117 |
+
+  Couro/Ferro/Ouro/Diamante foram os valores pedidos; Corrente e Netherite
+  foram escolhidos pra manter a mesma ordem relativa do vanilla (Couro <
+  Ouro ≲ Corrente < Ferro < Diamante < Netherite). Elmo de Tartaruga também
+  ganha um valor pequeno (4) pra não virar defesa zero. Resistência a
+  empurrão (perk do Netherite) não é mexida — só ARMOR/ARMOR_TOUGHNESS.
+
+  **Limitação conhecida**: a tooltip do item de armadura em si (tanto no
+  inventário quanto no slot equipado dentro de "Status & Equipamento") ainda
+  mostra os atributos vanilla originais (`+X Armor`) como texto — são só
+  cosméticos agora, sem efeito real, mas ainda aparecem escritos no item.
+  Corrigir isso exigiria reescrever a lore/flags do item de verdade
+  (mexendo no NBT do item equipado), o que não foi feito nesta leva.
 
 ## Nível Global
 

@@ -144,6 +144,33 @@ public final class CombatAbilityService {
         return PurchaseResult.SUCCESS;
     }
 
+    /**
+     * Resets every combat tree node to rank 0 and refunds the full Blood Points cost
+     * paid for every rank purchased (same tier-scaled formula {@link #nextRankCost}
+     * uses), so a rebalance (or just changing your mind) never leaves points stranded
+     * in an old build. Also clears each ability's enabled/disabled toggle back to its
+     * default. Returns the amount refunded (0 if nothing was unlocked).
+     */
+    public long resetTree(Player p) {
+        long refund = 0L;
+        for (CombatAbility a : CombatAbility.values()) {
+            int rank = this.rank(p, a);
+            if (rank <= 0) {
+                continue;
+            }
+            int tier = CombatTreeNode.of(a).tier();
+            long tierBase = CombatTreeMath.tierBaseCost(this.baseCost, this.costPerTier, tier);
+            long tierPerRank = CombatTreeMath.tierCostPerRank(this.costPerRank, this.costPerRankPerTier, tier);
+            refund += CombatTreeMath.totalCost(tierBase, tierPerRank, rank);
+            p.getPersistentDataContainer().set(this.rankKey(a), PersistentDataType.INTEGER, 0);
+            p.getPersistentDataContainer().remove(this.key(a));
+        }
+        if (refund > 0L) {
+            this.valor.deposit(p, refund);
+        }
+        return refund;
+    }
+
     // ---- Melee combat effects --------------------------------------------------
 
     public double outgoingMultiplier(Player p, LivingEntity target) {

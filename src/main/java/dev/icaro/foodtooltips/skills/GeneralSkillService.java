@@ -62,15 +62,6 @@ public final class GeneralSkillService {
         };
     }
 
-    public int defense(Player player) {
-        return this.progress(player, SkillType.MINING).level();
-    }
-
-    public double damageReduction(Player player) {
-        int defense = this.defense(player);
-        return (double)defense / ((double)defense + 100.0);
-    }
-
     public int miningSpeed(Player player, Material tool) {
         return this.baseMiningSpeed(tool) + this.progress(player, SkillType.MINING).level();
     }

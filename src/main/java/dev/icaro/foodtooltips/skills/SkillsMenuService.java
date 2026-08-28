@@ -40,18 +40,20 @@ public final class SkillsMenuService {
     private final CombatAbilityService abilities;
     private final MiningMenuService mining;
     private final GlobalLevelService global;
+    private final ArmorDefenseService armor;
     private BackpackService backpacks;
     private LevelColorMenuService levelColors;
     private CombatTreeMenuService tree;
     private final Map<UUID, View> views = new HashMap<>();
 
-    public SkillsMenuService(CombatSkillService c, GeneralSkillService g, PlayerStatsService s, CombatAbilityService a, MiningMenuService m, GlobalLevelService global) {
+    public SkillsMenuService(CombatSkillService c, GeneralSkillService g, PlayerStatsService s, CombatAbilityService a, MiningMenuService m, GlobalLevelService global, ArmorDefenseService armor) {
         this.combat = c;
         this.general = g;
         this.stats = s;
         this.abilities = a;
         this.mining = m;
         this.global = global;
+        this.armor = armor;
     }
 
     public void backpacks(BackpackService backpacks) {
@@ -363,7 +365,7 @@ public final class SkillsMenuService {
     private ItemStack head(Player p, Language l) {
         PlayerStats s = this.stats.stats(p);
         CombatProgress c = this.combat.progress(p);
-        int defense = this.general.defense(p);
+        int defense = this.armor.defense(p);
         long speedPercent = Math.round(this.value(p, Attribute.MOVEMENT_SPEED, 0.1) / 0.1 * 100.0);
         double critDamage = (this.abilities.criticalDamageMultiplier(p) - 1.0) * 100.0;
         double critChance = this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p);
@@ -431,7 +433,7 @@ public final class SkillsMenuService {
     private ItemStack combatStatsItem(Player p, Language l) {
         PlayerStats s = this.stats.stats(p);
         CombatProgress c = this.combat.progress(p);
-        int defense = this.general.defense(p);
+        int defense = this.armor.defense(p);
         double critChance = this.combat.critChance(c.level()) + this.abilities.critChanceBonus(p);
         double critDamage = (this.abilities.criticalDamageMultiplier(p) - 1.0) * 100.0;
         List<Component> lore = List.of(
