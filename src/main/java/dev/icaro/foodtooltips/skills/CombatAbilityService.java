@@ -51,6 +51,7 @@ public final class CombatAbilityService {
     private final CombatSkillService combat;
     private final PlayerStatsService stats;
     private final CombatValorService valor;
+    private final ArmorDefenseService armor;
     private final long baseCost;
     private final long costPerTier;
     private final long costPerRank;
@@ -64,11 +65,12 @@ public final class CombatAbilityService {
     private final Map<UUID, Long> vitalTouchCooldowns = new HashMap<>();
     private final Set<UUID> magicDamageInFlight = new HashSet<>();
 
-    public CombatAbilityService(Plugin p, CombatSkillService combat, PlayerStatsService stats, CombatValorService valor) {
+    public CombatAbilityService(Plugin p, CombatSkillService combat, PlayerStatsService stats, CombatValorService valor, ArmorDefenseService armor) {
         this.plugin = p;
         this.combat = combat;
         this.stats = stats;
         this.valor = valor;
+        this.armor = armor;
         this.baseCost = Math.max(1L, p.getConfig().getLong("combat-tree.base-unlock-cost", 20L));
         this.costPerTier = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-tier", 15L));
         this.costPerRank = Math.max(0L, p.getConfig().getLong("combat-tree.cost-per-rank", 8L));
@@ -215,8 +217,7 @@ public final class CombatAbilityService {
         if (this.enabled(p, CombatAbility.BERSERKER) && p.getHealth() <= maxHealth(p) * 0.3) {
             multiplier *= CombatTreeMath.berserkerMultiplier(this.rank(p, CombatAbility.BERSERKER), this.maxRank(CombatAbility.BERSERKER));
         }
-        AttributeInstance armor = target.getAttribute(Attribute.ARMOR);
-        if (this.enabled(p, CombatAbility.ARMOR_PIERCER) && armor != null && armor.getValue() > 0.0) {
+        if (this.enabled(p, CombatAbility.ARMOR_PIERCER) && this.hasDefense(target)) {
             multiplier *= CombatTreeMath.armorPiercerMultiplier(this.rank(p, CombatAbility.ARMOR_PIERCER), this.maxRank(CombatAbility.ARMOR_PIERCER));
         }
         if (this.enabled(p, CombatAbility.APEX_WARRIOR)) {
@@ -232,6 +233,21 @@ public final class CombatAbilityService {
 
     public double criticalMultiplier(Player p, double defaultMultiplier) {
         return this.enabled(p, CombatAbility.CRITICAL_MASTERY) ? CombatTreeMath.criticalMasteryMultiplier(this.rank(p, CombatAbility.CRITICAL_MASTERY), this.maxRank(CombatAbility.CRITICAL_MASTERY)) : defaultMultiplier;
+    }
+
+    /**
+     * Whether the target has any defense worth piercing: for a player, the custom
+     * {@link ArmorDefenseService#defense} stat (vanilla ARMOR is deliberately zeroed
+     * for players now — checking the vanilla attribute here would make Armor Piercer
+     * never trigger in PvP, since every player's vanilla ARMOR reads 0); for a mob,
+     * vanilla ARMOR (untouched — e.g. armored zombies/piglins/wither skeletons).
+     */
+    private boolean hasDefense(LivingEntity target) {
+        if (target instanceof Player targetPlayer) {
+            return this.armor.defense(targetPlayer) > 0;
+        }
+        AttributeInstance armorAttr = target.getAttribute(Attribute.ARMOR);
+        return armorAttr != null && armorAttr.getValue() > 0.0;
     }
 
     private static double maxHealth(LivingEntity e) {

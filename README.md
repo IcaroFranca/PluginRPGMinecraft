@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.29.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.29.2.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -250,6 +250,14 @@ skills estiverem prontas:
   linha "Defesa: +N" em verde, igual ao número que realmente conta. Roda no
   join e a cada tick do HUD, uma vez por item (guardado por uma flag na PDC
   do próprio item, então não sobrescreve encantos/renomes feitos depois).
+
+  **Corrige Perfurador de Armadura no PvP**: a habilidade checava se o alvo
+  tinha `Attribute.ARMOR` vanilla > 0 pra decidir se dava o bônus de dano —
+  como a mudança acima zera esse atributo de propósito em todo jogador, a
+  habilidade nunca mais disparava contra outros jogadores (só contra mobs
+  armados). `CombatAbilityService#hasDefense` agora checa
+  `ArmorDefenseService#defense` quando o alvo é um jogador, e o atributo
+  vanilla quando é um mob (que continua intocado).
 
 ## Nível Global
 
