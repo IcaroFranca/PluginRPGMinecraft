@@ -1,14 +1,11 @@
 name: NexusRPG
-version: '0.31.2'
+version: '0.32.0'
 main: dev.icaro.foodtooltips.FoodTooltipsPlugin
 api-version: '26.2'
 author: icaro
 prefix: NexusRPG
 softdepend: [Geyser-Spigot, floodgate, WorldGuard, GriefPrevention]
 commands:
-  shop:
-    description: Opens the RPG shop.
-    usage: /shop
   coins:
     description: Shows or administrates coin balances.
     usage: /coins [player] [set|give] [amount]

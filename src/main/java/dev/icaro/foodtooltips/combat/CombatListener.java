@@ -138,10 +138,8 @@ public final class CombatListener implements Listener {
             return;
         }
         if (this.abilities.isAbilityDamageInFlight(p)) {
-            // Special-ability damage (Arcane Slash, Sword Throw) bypasses melee multipliers,
-            // Ferocity's extra hits and Cleave's splash entirely — just show feedback. This is
-            // what keeps Sword Throw single-target: without it, Cleave (if enabled) would
-            // splash the throw's hit onto nearby enemies too.
+            // Sword Throw's own damage bypasses melee multipliers and Ferocity's extra
+            // hits entirely — just show feedback. This is what keeps it single-target.
             if (!(target instanceof Player)) {
                 this.visuals.track(target);
                 this.visuals.damageNumber(target, e.getFinalDamage(), false);
@@ -156,9 +154,9 @@ public final class CombatListener implements Listener {
         double critChance = this.combat.critChance(level) + this.abilities.critChanceBonus(p);
         boolean skillCritical = ThreadLocalRandom.current().nextDouble(100.0) < critChance;
         boolean vanillaCritical = e.getDamager() == p && p.getFallDistance() > 0.0f && !p.isOnGround() && !p.isInWater() && !p.isClimbing() && !p.isSprinting() && p.getVehicle() == null;
-        boolean critical = skillCritical || vanillaCritical || this.abilities.guaranteedCritical(p);
+        boolean critical = skillCritical || vanillaCritical;
         double mobBonus = 1.0 + this.bestiary.damageBonus(p, target.getType());
-        double damage = e.getDamage() * this.combat.damageMultiplier(level) * mobBonus * this.abilities.outgoingMultiplier(p, target)
+        double damage = e.getDamage() * this.combat.damageMultiplier(level) * mobBonus * this.abilities.outgoingMultiplier(p)
                 * this.global.strengthMultiplier(p) * (critical ? this.abilities.criticalMultiplier(p, this.critMultiplier) : 1.0);
         e.setDamage(damage);
         this.visuals.track(target);
@@ -172,22 +170,6 @@ public final class CombatListener implements Listener {
                     double newHealth = Math.max(0.0, target.getHealth() - extraDamage);
                     target.setHealth(newHealth);
                     this.visuals.damageNumber(target, extraDamage, false);
-                }
-            }
-            if (this.abilities.enabled(p, CombatAbility.CLEAVE)) {
-                double fraction = this.abilities.cleaveSplashFraction(p);
-                int maxTargets = this.abilities.cleaveMaxTargets(p);
-                double splash = e.getFinalDamage() * fraction;
-                int hits = 0;
-                for (Entity nearby : target.getNearbyEntities(3.0, 2.0, 3.0)) {
-                    if (!(nearby instanceof Enemy enemy) || nearby == target) {
-                        continue;
-                    }
-                    enemy.damage(splash, p);
-                    this.visuals.damageNumber(enemy, splash, false);
-                    if (++hits >= maxTargets) {
-                        break;
-                    }
                 }
             }
         });
@@ -237,23 +219,6 @@ public final class CombatListener implements Listener {
                 this.sweepNearbyDrops(p, e.getEntity().getLocation(), radius);
             }
         }
-    }
-
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-    public void undyingWill(EntityDamageEvent e) {
-        if (!(e.getEntity() instanceof Player p)) {
-            return;
-        }
-        double reduction = this.abilities.undyingWillReduction(p);
-        if (reduction <= 0.0) {
-            return;
-        }
-        AttributeInstance maxHealthAttr = p.getAttribute(Attribute.MAX_HEALTH);
-        double maxHealth = maxHealthAttr == null ? 20.0 : maxHealthAttr.getValue();
-        if (p.getHealth() > maxHealth * 0.5) {
-            return;
-        }
-        e.setDamage(e.getDamage() * (1.0 - reduction));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

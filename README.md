@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.31.2.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.32.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -426,3 +426,56 @@ agora reagrupa as pilhas iguais do inventário (`coalesce`, respeitando o
 stack size máximo) logo depois de aplicar a tag, todo tick — cura tanto essa
 fragmentação causada pelo sistema de tiers quanto qualquer outra pilha
 partida por acidente.
+
+## Loja removida (por enquanto)
+
+Todo o pacote `dev.icaro.foodtooltips.shop` (`ShopService`, `ShopItem`,
+`ShopMenuListener`, `ShopItemListener`, `PortalService`) foi removido, junto
+com o comando `/shop`, o registro dos seus listeners e o botão "Loja" (slot
+51) do menu principal de `/skills`. `ProtectionService` (usado só pelo
+`ShopItemListener`) ficou pra trás sem uso — é inofensivo mantê-lo (não
+depende de nada que foi removido), então não foi apagado, pra facilitar
+reviver a loja depois se for o caso. `EconomyService` (moedas, `/coins`)
+continua existindo normalmente — só perdeu o bônus de Caçador de Tesouros
+(ver seção seguinte), não a loja em si.
+
+## Árvore de Combate reduzida e reordenada; Mochila de Combate migrou pra árvore
+
+**12 habilidades removidas**: Vampirismo, Execução, Caçador de Tesouros,
+Instinto do Caçador, Vontade Inabalável, Toque Vital, Maestria de Combate,
+Corte Arcano, Golpe em Arco (Cleave), Perfurador de Armadura, Implacável e
+Guerreiro Supremo. Sobraram 7: Golpes Implacáveis, Arremesso de Espada, Sede
+de Sangue, Berserker, Colheita de Almas, Maestria Crítica e Segundo Fôlego —
+cada bônus de stat que vinha de uma habilidade removida (Strength, Ferocity,
+Inteligência, Dano de Habilidade, Vitalidade máxima) saiu de
+`PlayerStatsService`/`EconomyService` junto com ela; o resto (Swing Range,
+Regen. de Vida, Mending) continua vindo de Arremesso de Espada/Colheita de
+Almas/Segundo Fôlego, que ficaram.
+
+**Berserker agora ativa abaixo de 10% HP** (era 30%) — um bônus de
+last-stand de verdade, não "a maior parte da luta com HP reduzido".
+
+**Árvore reordenada**: Fúria e Sangue viraram cadeias de 3 níveis só
+(Golpes Implacáveis → Berserker → Maestria Crítica; Sede de Sangue →
+Colheita de Almas → Segundo Fôlego, cada uma agora raiz da própria cadeia
+já que seus antigos pré-requisitos foram removidos). **Arremesso de Espada
+subiu pro topo da árvore**: agora exige Maestria Crítica *e* Segundo Fôlego
+(o topo das duas cadeias) em vez de ser raiz de um galho próprio atrás de
+uma passiva descartável — é a habilidade de pico da árvore agora, não mais
+enterrada Vidência.
+
+**Mochila de Combate virou parte da árvore**: os 6 níveis de capacidade
+(9/18/27/36/45/54 slots) que antes desbloqueavam automaticamente pelo nível
+da skill de Combate (1/10/20/30/40/50) agora são 6 nós próprios na árvore
+(`CombatAbility.BACKPACK_1`..`BACKPACK_6`, ramo novo `CombatBranch.STORAGE`,
+maxRank 1 cada — desbloqueio único, não uma habilidade que sobe de nível),
+comprados com Pontos de Sangue como qualquer outro nó, em cadeia linear até
+o topo da árvore (BACKPACK_6 no capstone, slot 4). `BackpackService` agora
+lê `CombatAbilityService#backpackRank` (quantos nós desbloqueados, 0-6) em
+vez do nível da skill pra calcular a capacidade da mochila de Combate — as
+outras 6 mochilas (Mineração, Pesca etc.) continuam do jeito que estavam,
+level-based. Só conta nós *desbloqueados* (`unlocked`), não *ativados*
+(`enabled`): diferente de toda outra passiva, desativar um nó de mochila via
+shift-clique encolheria a capacidade visível e prenderia itens já guardados
+além do novo limite menor — por isso o menu da árvore recusa esse
+shift-clique nesses nós com uma mensagem explicando o motivo.

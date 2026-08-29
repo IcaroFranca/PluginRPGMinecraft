@@ -104,31 +104,23 @@ public final class PlayerStatsService {
         AttributeInstance a = p.getAttribute(Attribute.MAX_HEALTH);
         long globalStrength = this.global == null ? 0L : this.global.snapshot(p).strength();
 
-        double strengthBonus = this.abilities == null ? 0.0 : this.abilities.strengthBonus(p);
-        double ferocityBonus = this.abilities == null ? 0.0 : this.abilities.ferocityBonus(p);
         double swingRangeBonus = this.abilities == null ? 0.0 : this.abilities.swingRangeBonus(p);
-        double intelligenceBonus = this.abilities == null ? 0.0 : this.abilities.intelligenceBonus(p);
-        double abilityDamageBonus = this.abilities == null ? 0.0 : this.abilities.abilityDamageBonus(p);
         double healthRegenBonus = this.abilities == null ? 0.0 : this.abilities.healthRegenBonus(p);
-        double vitalityBonus = this.abilities == null ? 0.0 : this.abilities.vitalityBonus(p);
         double mendingBonus = this.abilities == null ? 0.0 : this.abilities.mendingBonus(p);
-
-        double effectiveMaxVitality = storedMaxVitality + vitalityBonus;
-        double effectiveIntelligence = this.intelligence + intelligenceBonus;
 
         return new PlayerStats(
                 p.getHealth(),
                 a == null ? 20.0 : a.getValue(),
                 Math.min(effectiveMaxMana, storedMana),
                 effectiveMaxMana,
-                globalStrength + Math.round(strengthBonus),
-                clamp(this.ferocity + ferocityBonus, 0.0, this.ferocityCap),
+                globalStrength,
+                clamp(this.ferocity, 0.0, this.ferocityCap),
                 clamp(this.swingRange + swingRangeBonus, 0.0, this.swingRangeCap),
-                effectiveIntelligence,
-                this.abilityDamage + abilityDamageBonus,
+                this.intelligence,
+                this.abilityDamage,
                 this.healthRegen + healthRegenBonus,
-                Math.min(effectiveMaxVitality, storedVitality),
-                effectiveMaxVitality,
+                Math.min(storedMaxVitality, storedVitality),
+                storedMaxVitality,
                 this.mending + mendingBonus,
                 this.trueDefense);
     }

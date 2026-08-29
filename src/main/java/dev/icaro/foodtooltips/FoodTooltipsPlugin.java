@@ -22,11 +22,6 @@ import dev.icaro.foodtooltips.item.ItemTierService;
 import dev.icaro.foodtooltips.mining.GemService;
 import dev.icaro.foodtooltips.mining.MiningMenuListener;
 import dev.icaro.foodtooltips.mining.MiningMenuService;
-import dev.icaro.foodtooltips.protect.ProtectionService;
-import dev.icaro.foodtooltips.shop.PortalService;
-import dev.icaro.foodtooltips.shop.ShopItemListener;
-import dev.icaro.foodtooltips.shop.ShopMenuListener;
-import dev.icaro.foodtooltips.shop.ShopService;
 import dev.icaro.foodtooltips.skills.ArmorDefenseListener;
 import dev.icaro.foodtooltips.skills.ArmorDefenseService;
 import dev.icaro.foodtooltips.skills.BackpackListener;
@@ -80,17 +75,16 @@ extends JavaPlugin {
         CombatValorService valor = new CombatValorService((Plugin)this);
         ArmorDefenseService armor = new ArmorDefenseService();
         ItemTierService tiers = new ItemTierService((Plugin)this);
-        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor, armor);
+        CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
-        ShopService shop = new ShopService((Plugin)this, economy);
         BestiaryProgressService bestiaryProgress = new BestiaryProgressService((Plugin)this);
         GemService gems = new GemService((Plugin)this);
         MiningMenuService mining = new MiningMenuService(gems);
         GlobalLevelService global = new GlobalLevelService((Plugin)this, combat, general, bestiaryProgress);
         stats.global(global);
         SkillsMenuService menus = new SkillsMenuService(combat, general, stats, abilities, mining, global, armor);
-        this.backpacks = new BackpackService((Plugin)this, combat, general);
+        this.backpacks = new BackpackService((Plugin)this, combat, general, abilities);
         menus.backpacks(this.backpacks);
         BestiaryMenuService bestiary = new BestiaryMenuService(bestiaryProgress, economy, valor);
         this.progressBar = new SkillProgressBarService((Plugin)this);
@@ -125,9 +119,6 @@ extends JavaPlugin {
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
-        pm.registerEvents((Listener)new ShopMenuListener(shop), (Plugin)this);
-        pm.registerEvents((Listener)new ShopItemListener((Plugin)this, shop, new ProtectionService()), (Plugin)this);
-        pm.registerEvents((Listener)new PortalService((Plugin)this, shop), (Plugin)this);
         FoodTooltipListener foodListener = new FoodTooltipListener((Plugin)this, new FoodTooltipService());
         pm.registerEvents((Listener)foodListener, (Plugin)this);
         SetSkillLevelCommand setSkill = new SetSkillLevelCommand(combat, general, global);
@@ -169,15 +160,6 @@ extends JavaPlugin {
             }
             catch (IllegalArgumentException ex) {
                 s.sendMessage((Component)Component.text((String)(this.text(s, "Uso: ", "Usage: ") + "/coins <player> <set|give> <amount>"), (TextColor)NamedTextColor.RED));
-            }
-            return true;
-        });
-        this.getCommand("shop").setExecutor((s, c, l, a) -> {
-            if (s instanceof Player) {
-                Player p = (Player)s;
-                shop.open(p);
-            } else {
-                s.sendMessage((Component)Component.text((String)"Only players."));
             }
             return true;
         });

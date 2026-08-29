@@ -24,9 +24,7 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
         /** Always-on effect once unlocked; can still be toggled off. */
         PASSIVE,
         /** Triggered by a dedicated in-world keybind (e.g. swap-hands for Sword Throw). */
-        ACTIVE_KEYBIND,
-        /** Triggered by right-clicking the node in the tree menu. */
-        ACTIVE_MENU
+        ACTIVE_KEYBIND
     }
 
     private static final Map<CombatAbility, CombatTreeNode> REGISTRY = new EnumMap<>(CombatAbility.class);
@@ -47,57 +45,43 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
     }
 
     static {
-        // ---- Slot layout ---- inspired by Hypixel SkyBlock's Heart of the Mountain /
-        // Heart of the Forest: instead of 3 straight vertical columns converging on a
-        // single point, each branch zigzags — a node's slot drifts left/right off its
-        // prerequisite's column rather than sitting directly above it, and single roots
-        // fan out into multiple tier-2 children (VAMPIRISM alone fans into 3: BLOOD_LUST,
-        // TREASURE_HUNTER, VITAL_TOUCH). The overall silhouette still narrows going up
-        // (root row spans 5 columns, the middle rows spread to 7-8, then it tapers back
-        // down to APEX_WARRIOR alone at the peak) — same "mountain" read as HOTM's tree,
-        // but this time the actual ability icons draw the shape, not just the
-        // background filler. Branches/prerequisites/costs/ranks are unchanged — this
-        // block only touches each register() call's slot argument.
+        // ---- Slot layout ---- column 0 of every row is reserved for the Combat Level
+        // gauge (see CombatTreeMenuService#placeLevelIndicators) plus the Back/Reset/
+        // Header buttons on the root row, so every node below sits in columns 1-8. Max
+        // rank is a function of tier (10/14/18/22/26/32 for tiers 1-6) for every ability
+        // node; the 6 Backpack nodes are single-unlock milestones (maxRank 1) instead,
+        // since backpack capacity is a step function, not something to grind ranks into.
 
-        // ---- Fury (offense) ---- ordered so each node's max-rank payoff is >= the one
-        // before it: RUTHLESS_STRIKES (+10% crit, flat) < EXECUTIONER/ARMOR_PIERCER (+25%
-        // dmg, both conditional) < BERSERKER (+30% dmg, conditional) < CRITICAL_MASTERY
-        // (unconditional crit-damage multiplier, the branch's real finisher). Max rank is
-        // purely a function of tier now (10/14/18/22/26/32 for tiers 1-6) — every node at
-        // the same depth takes the same number of ranks to max, so the grind scales evenly
-        // instead of jumping around within a tier.
-        register(CombatAbility.RUTHLESS_STRIKES, CombatBranch.FURY, 10, Kind.PASSIVE, 51);
-        register(CombatAbility.EXECUTIONER, CombatBranch.FURY, 14, Kind.PASSIVE, 43, CombatAbility.RUTHLESS_STRIKES);
-        register(CombatAbility.ARMOR_PIERCER, CombatBranch.FURY, 18, Kind.PASSIVE, 35, CombatAbility.EXECUTIONER);
-        register(CombatAbility.BERSERKER, CombatBranch.FURY, 22, Kind.PASSIVE, 24, CombatAbility.ARMOR_PIERCER);
-        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 26, Kind.PASSIVE, 14, CombatAbility.BERSERKER);
+        // ---- Fury (offense) ---- RUTHLESS_STRIKES (root, flat crit chance) < BERSERKER
+        // (conditional damage under 10% HP) < CRITICAL_MASTERY (unconditional crit-damage
+        // multiplier, the branch's finisher).
+        register(CombatAbility.RUTHLESS_STRIKES, CombatBranch.FURY, 10, Kind.PASSIVE, 47);
+        register(CombatAbility.BERSERKER, CombatBranch.FURY, 14, Kind.PASSIVE, 38, CombatAbility.RUTHLESS_STRIKES);
+        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 18, Kind.PASSIVE, 29, CombatAbility.BERSERKER);
 
-        // ---- Sustain (blood) ----
-        register(CombatAbility.VAMPIRISM, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 49);
-        register(CombatAbility.BLOOD_LUST, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 39, CombatAbility.VAMPIRISM);
-        register(CombatAbility.TREASURE_HUNTER, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 41, CombatAbility.VAMPIRISM);
-        register(CombatAbility.UNDYING_WILL, CombatBranch.SUSTAIN, 18, Kind.PASSIVE, 30, CombatAbility.BLOOD_LUST);
-        register(CombatAbility.SOUL_HARVEST, CombatBranch.SUSTAIN, 22, Kind.PASSIVE, 22, CombatAbility.UNDYING_WILL);
-        register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 26, Kind.PASSIVE, 12, CombatAbility.SOUL_HARVEST);
+        // ---- Sustain (blood) ---- BLOOD_LUST (root, streak-gated damage) < SOUL_HARVEST
+        // (heal on kill + Health Regen) < SECOND_WIND (emergency save + Mending).
+        register(CombatAbility.BLOOD_LUST, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 50);
+        register(CombatAbility.SOUL_HARVEST, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 41, CombatAbility.BLOOD_LUST);
+        register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 18, Kind.PASSIVE, 32, CombatAbility.SOUL_HARVEST);
 
-        // ---- Utility (precision) ---- root is a minor passive (like every other branch's
-        // root), not a full active ability: SWORD_THROW (an active with real burst damage)
-        // now costs a tier more than the other branches' cheapest node, same as ARCANE_SLASH
-        // and VITAL_TOUCH already do in Synergy.
-        register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 47);
-        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 14, Kind.ACTIVE_KEYBIND, 37, CombatAbility.HUNTERS_INSTINCT);
-        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 18, Kind.PASSIVE, 28, CombatAbility.SWORD_THROW);
-        register(CombatAbility.RELENTLESS, CombatBranch.UTILITY, 22, Kind.PASSIVE, 20, CombatAbility.CLEAVE);
+        // ---- Utility (precision) ---- SWORD_THROW now sits above both Fury and Sustain's
+        // 3-tier chains, requiring the top of each: it's the tree's real pinnacle active
+        // ability, not a root gated behind a throwaway passive like it used to be.
+        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 22, Kind.ACTIVE_KEYBIND, 22,
+                CombatAbility.CRITICAL_MASTERY, CombatAbility.SECOND_WIND);
 
-        // ---- Synergy (bridges between branches) ----
-        register(CombatAbility.VITAL_TOUCH, CombatBranch.SYNERGY, 14, Kind.ACTIVE_MENU, 40, CombatAbility.VAMPIRISM);
-        register(CombatAbility.COMBAT_MASTERY, CombatBranch.SYNERGY, 18, Kind.PASSIVE, 29,
-                CombatAbility.BLOOD_LUST, CombatAbility.SWORD_THROW);
-        register(CombatAbility.ARCANE_SLASH, CombatBranch.SYNERGY, 18, Kind.ACTIVE_MENU, 33, CombatAbility.EXECUTIONER);
-
-        // ---- Capstone ---- the longest grind in the tree: 32 ranks.
-        register(CombatAbility.APEX_WARRIOR, CombatBranch.CAPSTONE, 32, Kind.PASSIVE, 4,
-                CombatAbility.CRITICAL_MASTERY, CombatAbility.SECOND_WIND, CombatAbility.RELENTLESS);
+        // ---- Storage ---- the Combat Backpack's 6 capacity levels (9/18/27/36/45/54
+        // slots), moved into the tree as its own independent chain: one node per level,
+        // single-unlock (maxRank 1), gated by Blood Points + Combat level like everything
+        // else here instead of unlocking automatically from raw Combat level. See
+        // CombatAbilityService#backpackRank and BackpackService#capacity.
+        register(CombatAbility.BACKPACK_1, CombatBranch.STORAGE, 1, Kind.PASSIVE, 52);
+        register(CombatAbility.BACKPACK_2, CombatBranch.STORAGE, 1, Kind.PASSIVE, 43, CombatAbility.BACKPACK_1);
+        register(CombatAbility.BACKPACK_3, CombatBranch.STORAGE, 1, Kind.PASSIVE, 34, CombatAbility.BACKPACK_2);
+        register(CombatAbility.BACKPACK_4, CombatBranch.STORAGE, 1, Kind.PASSIVE, 25, CombatAbility.BACKPACK_3);
+        register(CombatAbility.BACKPACK_5, CombatBranch.STORAGE, 1, Kind.PASSIVE, 13, CombatAbility.BACKPACK_4);
+        register(CombatAbility.BACKPACK_6, CombatBranch.STORAGE, 1, Kind.PASSIVE, 4, CombatAbility.BACKPACK_5);
 
         if (REGISTRY.size() != CombatAbility.values().length) {
             throw new IllegalStateException("CombatTreeNode registry is missing entries for some CombatAbility values");

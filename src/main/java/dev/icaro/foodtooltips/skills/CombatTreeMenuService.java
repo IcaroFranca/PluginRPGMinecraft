@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -27,16 +26,17 @@ import org.bukkit.inventory.meta.SkullMeta;
 /**
  * Renders and drives the combat ability tree: a 54-slot chest laying out
  * every {@link CombatAbility} at the slot defined by its {@link
- * CombatTreeNode}, with branches read top (capstone) to bottom (roots).
+ * CombatTreeNode}, with branches read top (Sword Throw's pinnacle) to
+ * bottom (roots) — including the 6 Combat Backpack capacity nodes, which
+ * live in the tree alongside the actual abilities.
  *
  * <p>Left click unlocks/upgrades a node (spends Blood Points, requires a
  * minimum Combat level per tier — see {@link CombatAbilityService#levelRequirement}).
- * Shift-click toggles an unlocked passive on/off. Right click casts a
- * menu-triggered active ability (Arcane Slash, Vital Touch). The back
- * button sits bottom-left, a TNT reset button (click twice to confirm —
- * refunds every Blood Point spent, see {@link CombatAbilityService#resetTree})
- * sits right next to it, and the player's head (currency/status header)
- * sits bottom-right.
+ * Shift-click toggles an unlocked passive on/off (Backpack nodes are the one
+ * exception — see {@link #isBackpack}). The back button sits bottom-left, a
+ * TNT reset button (click twice to confirm — refunds every Blood Point
+ * spent, see {@link CombatAbilityService#resetTree}) sits right next to it,
+ * and the player's head (currency/status header) sits bottom-right.
  */
 public final class CombatTreeMenuService {
     private static final int BACK_SLOT = 45;
@@ -149,11 +149,10 @@ public final class CombatTreeMenuService {
             return true;
         }
         Language l = Language.of(p);
-        CombatTreeNode node = CombatTreeNode.of(ability);
         if (click.isShiftClick()) {
             this.handleToggle(p, ability, l);
         } else if (click == ClickType.RIGHT) {
-            this.handleCast(p, ability, node, l);
+            p.sendActionBar(this.text(l.choose("Esta habilidade não é ativada pelo menu.", "This ability isn't activated from the menu."), NamedTextColor.GRAY));
         } else {
             this.handlePurchase(p, ability, l);
         }
@@ -162,27 +161,18 @@ public final class CombatTreeMenuService {
     }
 
     private void handleToggle(Player p, CombatAbility ability, Language l) {
+        if (isBackpack(ability)) {
+            // No on/off state: disabling one would shrink the bag's visible size and
+            // strand whatever's already stored past the new smaller capacity.
+            p.sendActionBar(this.text(l.choose("Mochila de Combate não pode ser desativada.", "Combat Backpack nodes can't be disabled."), NamedTextColor.GRAY));
+            return;
+        }
         if (!this.abilities.unlocked(p, ability)) {
             p.sendActionBar(this.text(l.choose("Ainda não desbloqueada.", "Not unlocked yet."), NamedTextColor.RED));
             return;
         }
         boolean now = this.abilities.toggle(p, ability);
         p.sendActionBar(this.text(ability.name(l == Language.PT) + ": " + (now ? l.choose("ATIVADA", "ENABLED") : l.choose("DESATIVADA", "DISABLED")), now ? NamedTextColor.GREEN : NamedTextColor.GRAY));
-    }
-
-    private void handleCast(Player p, CombatAbility ability, CombatTreeNode node, Language l) {
-        if (node.kind() != CombatTreeNode.Kind.ACTIVE_MENU) {
-            p.sendActionBar(this.text(l.choose("Esta habilidade não é ativada pelo menu.", "This ability isn't activated from the menu."), NamedTextColor.GRAY));
-            return;
-        }
-        CombatAbilityService.CastResult result = ability == CombatAbility.ARCANE_SLASH ? this.abilities.castArcaneSlash(p) : this.abilities.castVitalTouch(p);
-        switch (result) {
-            case SUCCESS -> p.sendActionBar(this.text("✦ " + ability.name(l == Language.PT) + "! ✦", NamedTextColor.LIGHT_PURPLE));
-            case LOCKED -> p.sendActionBar(this.text(l.choose("Ainda não desbloqueada.", "Not unlocked yet."), NamedTextColor.RED));
-            case ON_COOLDOWN -> p.sendActionBar(this.text(l.choose("Em recarga.", "On cooldown."), NamedTextColor.RED));
-            case INSUFFICIENT_RESOURCE -> p.sendActionBar(this.text(l.choose("Recurso insuficiente.", "Not enough resource."), NamedTextColor.RED));
-            case NO_TARGET -> p.sendActionBar(this.text(l.choose("Sem alvo à vista.", "No target in sight."), NamedTextColor.RED));
-        }
     }
 
     /** Second click within {@link #RESET_CONFIRM_WINDOW_MILLIS} of the first actually resets; the first just arms it. */
@@ -230,7 +220,6 @@ public final class CombatTreeMenuService {
                 Component.empty(),
                 this.text(l.choose("Clique: desbloquear/melhorar", "Click: unlock/upgrade"), NamedTextColor.YELLOW),
                 this.text(l.choose("Shift + clique: ativar/desativar", "Shift + click: enable/disable"), NamedTextColor.YELLOW),
-                this.text(l.choose("Clique direito: usar (habilidades ativas)", "Right click: cast (active abilities)"), NamedTextColor.YELLOW),
                 this.text(l.choose("Bloco de TNT: resetar a árvore (devolve os Pontos de Sangue)", "TNT block: reset the tree (refunds Blood Points)"), NamedTextColor.YELLOW));
         ItemStack i = this.item(Material.PLAYER_HEAD, l.choose("Sua Árvore de Combate", "Your Combat Tree"), lore);
         SkullMeta m = (SkullMeta) i.getItemMeta();
@@ -248,6 +237,13 @@ public final class CombatTreeMenuService {
                         ? this.text(l.choose("Clique de novo para confirmar!", "Click again to confirm!"), NamedTextColor.RED)
                         : this.text(l.choose("Clique para resetar (pede confirmação).", "Click to reset (asks for confirmation)."), NamedTextColor.YELLOW));
         return this.item(Material.TNT, l.choose("Resetar Árvore", "Reset Tree"), lore, armed ? NamedTextColor.RED : NamedTextColor.GOLD);
+    }
+
+    private static boolean isBackpack(CombatAbility a) {
+        return switch (a) {
+            case BACKPACK_1, BACKPACK_2, BACKPACK_3, BACKPACK_4, BACKPACK_5, BACKPACK_6 -> true;
+            default -> false;
+        };
     }
 
     /** Locked → coal, unlocked → emerald, maxed → diamond; block variant = active, item variant = passive. */
@@ -302,22 +298,12 @@ public final class CombatTreeMenuService {
             long cost = this.abilities.nextRankCost(p, ability);
             lore.add(this.text(CURRENCY_SYMBOL + " " + (unlocked ? l.choose("Melhorar: ", "Upgrade: ") : l.choose("Desbloquear: ", "Unlock: ")) + this.valor.format(cost) + " " + l.choose("Pontos de Sangue", "Blood Points"), NamedTextColor.DARK_RED));
         }
-        if (unlocked && node.kind() == CombatTreeNode.Kind.PASSIVE) {
+        if (unlocked && node.kind() == CombatTreeNode.Kind.PASSIVE && !isBackpack(ability)) {
             boolean enabled = this.abilities.enabled(p, ability);
             lore.add(this.text(enabled ? l.choose("ATIVADA (shift-clique desativa)", "ENABLED (shift-click disables)") : l.choose("DESATIVADA (shift-clique ativa)", "DISABLED (shift-click enables)"), enabled ? NamedTextColor.GREEN : NamedTextColor.GRAY));
         }
         if (node.kind() == CombatTreeNode.Kind.ACTIVE_KEYBIND) {
             lore.add(this.text(l.choose("Ativa: trocar de mão (F) sem agachar", "Activates: swap hands (F) without sneaking"), NamedTextColor.AQUA));
-        }
-        if (node.kind() == CombatTreeNode.Kind.ACTIVE_MENU) {
-            if (unlocked) {
-                long remaining = ability == CombatAbility.ARCANE_SLASH ? this.abilities.arcaneSlashCooldownRemainingMillis(p) : this.abilities.vitalTouchCooldownRemainingMillis(p);
-                if (remaining > 0L) {
-                    lore.add(this.text(String.format(Locale.US, l.choose("Recarga: %.1fs", "Cooldown: %.1fs"), remaining / 1000.0), NamedTextColor.RED));
-                } else {
-                    lore.add(this.text(l.choose("Clique direito para usar!", "Right click to use!"), NamedTextColor.AQUA));
-                }
-            }
         }
 
         ItemStack item = this.item(this.stateIcon(active, rank, max), name, lore, nameColor);

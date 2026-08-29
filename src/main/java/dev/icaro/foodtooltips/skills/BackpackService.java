@@ -10,6 +10,7 @@ import dev.icaro.foodtooltips.skills.GeneralSkillService;
 import dev.icaro.foodtooltips.skills.SkillType;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -42,12 +43,14 @@ public final class BackpackService {
     private final Plugin plugin;
     private final CombatSkillService combat;
     private final GeneralSkillService general;
+    private final CombatAbilityService abilities;
     private final Map<UUID, View> views = new HashMap<UUID, View>();
 
-    public BackpackService(Plugin p, CombatSkillService c, GeneralSkillService g) {
+    public BackpackService(Plugin p, CombatSkillService c, GeneralSkillService g, CombatAbilityService a) {
         this.plugin = p;
         this.combat = c;
         this.general = g;
+        this.abilities = a;
     }
 
     public void openMenu(Player p) {
@@ -58,9 +61,20 @@ public final class BackpackService {
         BackpackType[] all = BackpackType.values();
         for (int i = 0; i < all.length; ++i) {
             BackpackType type = all[i];
-            int level = this.level(p, type);
-            int size = this.size(level);
-            List<Component> lore = List.of(this.line(l.choose("N\u00edvel da skill: ", "Skill level: ") + level, NamedTextColor.GRAY), this.line((String)(size == 0 ? l.choose("Desbloqueia no n\u00edvel 1", "Unlocks at level 1") : l.choose("Capacidade: ", "Capacity: ") + size + "/54"), size == 0 ? NamedTextColor.RED : NamedTextColor.GREEN), this.line(l.choose("Progress\u00e3o: 1, 10, 20, 30, 40 e 50", "Progression: 1, 10, 20, 30, 40, and 50"), NamedTextColor.DARK_GRAY), Component.empty(), this.line(size == 0 ? l.choose("BLOQUEADA", "LOCKED") : l.choose("Clique para abrir!", "Click to open!"), size == 0 ? NamedTextColor.RED : NamedTextColor.YELLOW));
+            int size = this.capacity(p, type);
+            List<Component> lore = new ArrayList<>();
+            if (type == BackpackType.COMBAT) {
+                lore.add(this.line(l.choose("Progresso na \u00e1rvore: ", "Tree progress: ") + this.abilities.backpackRank(p) + "/6", NamedTextColor.GRAY));
+                lore.add(this.line(size == 0 ? l.choose("Desbloqueia na \u00e1rvore de combate", "Unlocks in the combat tree") : l.choose("Capacidade: ", "Capacity: ") + size + "/54", size == 0 ? NamedTextColor.RED : NamedTextColor.GREEN));
+                lore.add(this.line(l.choose("Progress\u00e3o: 6 n\u00f3s na \u00e1rvore de combate (9, 18, 27, 36, 45 e 54)", "Progression: 6 nodes in the combat tree (9, 18, 27, 36, 45, and 54)"), NamedTextColor.DARK_GRAY));
+            } else {
+                int level = this.level(p, type);
+                lore.add(this.line(l.choose("N\u00edvel da skill: ", "Skill level: ") + level, NamedTextColor.GRAY));
+                lore.add(this.line(size == 0 ? l.choose("Desbloqueia no n\u00edvel 1", "Unlocks at level 1") : l.choose("Capacidade: ", "Capacity: ") + size + "/54", size == 0 ? NamedTextColor.RED : NamedTextColor.GREEN));
+                lore.add(this.line(l.choose("Progress\u00e3o: 1, 10, 20, 30, 40 e 50", "Progression: 1, 10, 20, 30, 40, and 50"), NamedTextColor.DARK_GRAY));
+            }
+            lore.add(Component.empty());
+            lore.add(this.line(size == 0 ? l.choose("BLOQUEADA", "LOCKED") : l.choose("Clique para abrir!", "Click to open!"), size == 0 ? NamedTextColor.RED : NamedTextColor.YELLOW));
             inv.setItem(slots[i], this.head(type, type.name(l == Language.PT) + " \u2022 " + l.choose("Mochila", "Backpack"), lore));
         }
         inv.setItem(49, this.item(Material.ARROW, l.choose("Voltar", "Back"), List.of()));
@@ -73,7 +87,7 @@ public final class BackpackService {
     }
 
     private void openBag(Player p, BackpackType type, int page) {
-        int capacity = this.size(this.level(p, type));
+        int capacity = this.capacity(p, type);
         if (capacity == 0) {
             return;
         }
@@ -125,7 +139,7 @@ public final class BackpackService {
             this.openBag(p, v.type, v.page - 1);
             return true;
         }
-        if (slot == size - 3 && v.page == 0 && this.size(this.level(p, v.type)) > 45) {
+        if (slot == size - 3 && v.page == 0 && this.capacity(p, v.type) > 45) {
             this.openBag(p, v.type, 1);
             return true;
         }
@@ -199,6 +213,16 @@ public final class BackpackService {
         };
     }
 
+    /**
+     * Backpack capacity for {@code p}: the Combat backpack's progression now lives in
+     * the combat ability tree (see {@link CombatAbilityService#backpackRank}) instead of
+     * the Combat skill's own level — every other backpack still unlocks purely from its
+     * matching general skill's level.
+     */
+    private int capacity(Player p, BackpackType t) {
+        return t == BackpackType.COMBAT ? this.sizeForRank(this.abilities.backpackRank(p)) : this.size(this.level(p, t));
+    }
+
     private int level(Player p, BackpackType t) {
         return t == BackpackType.COMBAT ? this.combat.progress(p).level() : this.general.progress(p, SkillType.valueOf(t.name())).level();
     }
@@ -223,6 +247,19 @@ public final class BackpackService {
             return 45;
         }
         return 54;
+    }
+
+    /** Same 9/18/27/36/45/54 capacity table as {@link #size}, indexed by how many of the 6 Backpack tree nodes (0-6) are unlocked. */
+    private int sizeForRank(int rank) {
+        return switch (rank) {
+            case 0 -> 0;
+            case 1 -> 9;
+            case 2 -> 18;
+            case 3 -> 27;
+            case 4 -> 36;
+            case 5 -> 45;
+            default -> 54;
+        };
     }
 
     private File file(UUID id, BackpackType t) {

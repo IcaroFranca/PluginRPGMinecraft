@@ -8,8 +8,7 @@ public enum CombatBranch {
     FURY(NamedTextColor.RED, "Fúria", "Fury"),
     SUSTAIN(NamedTextColor.DARK_RED, "Sangue", "Blood"),
     UTILITY(NamedTextColor.AQUA, "Precisão", "Precision"),
-    SYNERGY(NamedTextColor.LIGHT_PURPLE, "Sinergia", "Synergy"),
-    CAPSTONE(NamedTextColor.GOLD, "Ápice", "Apex");
+    STORAGE(NamedTextColor.YELLOW, "Mochila", "Backpack");
 
     private final TextColor color;
     private final String pt;

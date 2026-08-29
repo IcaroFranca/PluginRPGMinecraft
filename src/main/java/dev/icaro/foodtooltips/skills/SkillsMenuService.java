@@ -89,7 +89,6 @@ public final class SkillsMenuService {
         if (this.levelColors != null) {
             v.setItem(47, this.item(Material.NAME_TAG, l.choose("Cores do Nível", "Level Colors"), List.of(this.click(l))));
         }
-        v.setItem(51, this.item(Material.EMERALD, l.choose("Loja", "Shop"), List.of(this.click(l))));
         this.open(p, v, new View(Type.MAIN, 0, null));
     }
 
@@ -101,10 +100,6 @@ public final class SkillsMenuService {
         for (int i = 0; i < 25; ++i) {
             int level = page * 25 + i + 1;
             ArrayList<Component> lore = new ArrayList<>(List.of(this.text("+0.5% " + l.choose("Chance crítica", "Crit Chance"), NamedTextColor.AQUA), this.text("+4% " + l.choose("de dano", "Damage"), NamedTextColor.RED)));
-            Component bag = this.bagReward(level, l);
-            if (bag != null) {
-                lore.add(bag);
-            }
             if (level == x.level() + 1) {
                 lore.add(this.xp(x.xp(), x.requiredXp()));
             }
@@ -204,8 +199,6 @@ public final class SkillsMenuService {
                 } else if (slot == 47 && this.levelColors != null) {
                     this.views.remove(p.getUniqueId());
                     this.levelColors.open(p);
-                } else if (slot == 51) {
-                    p.performCommand("shop");
                 }
             }
             case GLOBAL -> {

@@ -90,16 +90,8 @@ public final class CombatTreeMath {
         return lerp(1.0, 10.0, rank, maxRank);
     }
 
-    public static double executionerMultiplier(int rank, int maxRank) {
-        return lerp(1.08, 1.25, rank, maxRank);
-    }
-
     public static double berserkerMultiplier(int rank, int maxRank) {
         return lerp(1.10, 1.30, rank, maxRank);
-    }
-
-    public static double armorPiercerMultiplier(int rank, int maxRank) {
-        return lerp(1.08, 1.25, rank, maxRank);
     }
 
     public static double criticalMasteryMultiplier(int rank, int maxRank) {
@@ -108,29 +100,12 @@ public final class CombatTreeMath {
 
     // ---- Sustain ----------------------------------------------------------------
 
-    public static double vampirismHeal(int rank, int maxRank) {
-        return lerp(0.5, 4.0, rank, maxRank);
-    }
-
     public static double bloodLustBonus(int rank, int maxRank) {
         return lerp(0.06, 0.20, rank, maxRank);
     }
 
     public static int bloodLustThreshold(int rank, int maxRank) {
         return lerpInt(10, 4, rank, maxRank, 4);
-    }
-
-    public static double treasureHunterBonus(int rank, int maxRank) {
-        return lerp(0.10, 0.40, rank, maxRank);
-    }
-
-    public static double undyingWillReduction(int rank, int maxRank) {
-        return lerp(0.02, 0.15, rank, maxRank);
-    }
-
-    /** Flat max-Vitality bonus granted by Undying Will alongside its damage reduction. */
-    public static double undyingWillVitalityBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(5.0, 40.0, rank, maxRank);
     }
 
     public static double soulHarvestHeal(int rank, int maxRank) {
@@ -168,109 +143,5 @@ public final class CombatTreeMath {
     /** Flat Swing Range bonus granted by Sword Throw alongside its damage/cooldown. */
     public static double swordThrowSwingRangeBonus(int rank, int maxRank) {
         return rank <= 0 ? 0.0 : lerp(0.2, 2.0, rank, maxRank);
-    }
-
-    public static int huntersInstinctDurationTicks(int rank, int maxRank) {
-        return lerpInt(60, 200, rank, maxRank, 60);
-    }
-
-    public static double cleaveSplashFraction(int rank, int maxRank) {
-        return lerp(0.10, 0.45, rank, maxRank);
-    }
-
-    public static int cleaveMaxTargets(int rank, int maxRank) {
-        return lerpInt(2, 8, rank, maxRank, 2);
-    }
-
-    /** Flat Ferocity bonus granted by Cleave alongside its splash damage — thematically apt since Ferocity is extra-hit chance. */
-    public static double cleaveFerocityBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(5.0, 40.0, rank, maxRank);
-    }
-
-    public static int relentlessInterval(int rank, int maxRank) {
-        return lerpInt(6, 2, rank, maxRank, 2);
-    }
-
-    // ---- Synergy / capstone ------------------------------------------------------
-
-    public static double masteryBloodLustBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(0.03, 0.15, rank, maxRank);
-    }
-
-    public static long masteryCooldownReductionMillis(int rank, int maxRank) {
-        return rank <= 0 ? 0L : Math.round(lerp(3.0, 10.0, rank, maxRank) * 1000.0);
-    }
-
-    /** Flat Strength bonus granted by Combat Mastery alongside its other bonuses. */
-    public static double combatMasteryStrengthBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(3.0, 30.0, rank, maxRank);
-    }
-
-    public static double apexFinalDamageBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(0.05, 0.20, rank, maxRank);
-    }
-
-    public static long apexCooldownFloorMillis(int rank, int maxRank) {
-        return rank <= 0 ? Long.MAX_VALUE : Math.round(lerp(8.0, 2.0, rank, maxRank) * 1000.0);
-    }
-
-    /** Percentage Ability Damage bonus granted by Apex Warrior, the capstone's broad late-game payoff. */
-    public static double apexAbilityDamageBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(3.0, 25.0, rank, maxRank);
-    }
-
-    /** Combines the sword-throw base cooldown with the Mastery/Apex Warrior modifiers (each with its own max rank). */
-    public static long swordThrowCooldownMillis(int swordThrowRank, int swordThrowMaxRank,
-                                                 int masteryRank, int masteryMaxRank,
-                                                 int apexRank, int apexMaxRank) {
-        long cooldown = swordThrowBaseCooldownMillis(swordThrowRank, swordThrowMaxRank)
-                - masteryCooldownReductionMillis(masteryRank, masteryMaxRank);
-        if (apexRank > 0) {
-            cooldown = Math.min(cooldown, apexCooldownFloorMillis(apexRank, apexMaxRank));
-        }
-        return Math.max(MIN_COOLDOWN_MILLIS, cooldown);
-    }
-
-    public static double arcaneSlashBaseDamage(int rank, int maxRank) {
-        return lerp(4.0, 20.0, rank, maxRank);
-    }
-
-    public static double arcaneSlashDamage(int rank, int maxRank, double intelligence, double abilityDamage) {
-        return (arcaneSlashBaseDamage(rank, maxRank) + intelligence * 0.35) * (1.0 + abilityDamage / 100.0);
-    }
-
-    public static double arcaneSlashManaCost(int rank, int maxRank) {
-        return lerp(25.0, 8.0, rank, maxRank);
-    }
-
-    public static long arcaneSlashCooldownMillis(int rank, int maxRank) {
-        return Math.round(lerp(14.0, 4.0, rank, maxRank) * 1000.0);
-    }
-
-    /** Flat Intelligence bonus granted by Arcane Slash alongside its own damage/cost/cooldown. */
-    public static double arcaneSlashIntelligenceBonus(int rank, int maxRank) {
-        return rank <= 0 ? 0.0 : lerp(5.0, 40.0, rank, maxRank);
-    }
-
-    public static double vitalTouchBaseHeal(int rank, int maxRank) {
-        return lerp(2.0, 10.0, rank, maxRank);
-    }
-
-    /** Base heal (self-portion, unaffected by Mending: that stat only boosts healing applied to others). */
-    public static double vitalTouchHeal(int rank, int maxRank, double intelligence, double abilityDamage) {
-        return (vitalTouchBaseHeal(rank, maxRank) + intelligence * 0.2) * (1.0 + abilityDamage / 100.0);
-    }
-
-    /** Applies the Mending stat to a heal amount landing on someone other than the caster. */
-    public static double applyMending(double baseHeal, double mending) {
-        return baseHeal * (1.0 + mending / 100.0);
-    }
-
-    public static double vitalTouchVitalityCost(int rank, int maxRank) {
-        return lerp(35.0, 15.0, rank, maxRank);
-    }
-
-    public static long vitalTouchCooldownMillis(int rank, int maxRank) {
-        return Math.round(lerp(20.0, 6.0, rank, maxRank) * 1000.0);
     }
 }
