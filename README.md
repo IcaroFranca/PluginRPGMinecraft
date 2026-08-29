@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.30.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.31.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -365,3 +365,42 @@ fixo arbitrário, `GlobalLevelService#maxAchievableLevel()` calcula o Nível
 Global mais alto realmente alcançável — Combate e as 6 skills gerais todas no
 nível 200, mais toda milestone de Bestiário e de Mineração reivindicada — e
 usa esse número pra paginar a tela até lá.
+
+## Sistema de raridade por Tiers (`dev.icaro.foodtooltips.item`)
+
+Todo item do jogo agora tem uma raridade, expressa como **Tier** em vez das
+palavras clássicas do Hypixel: `ItemTier` tem 6 valores, `S` > `A` > `B` > `C`
+> `D` > `E`, cada um com a cor que a palavra Hypixel equivalente teria —
+`S`=dourado (Legendary), `A`=roxo (Epic), `B`=azul (Rare), `C`=verde
+(Uncommon), `D`=branco (Common) — mais um tier novo abaixo do Common, `E`,
+cinza, pros blocos/itens mais "crus" e comuns do jogo (terra, pedregulho,
+graveto, cascalho...). O rótulo mostrado no item é `TIER {letra}` (ex.:
+`TIER C`) — mantido em inglês nas duas línguas, igual ao termo "Tier" que o
+próprio pedido já usava em português.
+
+**`ItemTierService#tierOf(Material)`** resolve o tier de qualquer `Material`:
+primeiro checa um override de config (`item-tiers` no `config.yml`, vazio por
+padrão), depois — se for uma ferramenta/arma/armadura — o tier vem da família
+do material (Netherite=S, Diamond=A, Iron/Golden/Copper/Chainmail=B,
+Stone=C, Wooden/Leather=D, mais alguns casos sem prefixo como Arco/Tridente
+julgados à parte), depois um conjunto curado de itens notáveis (lingotes,
+blocos de minério, drops raros) em S/A/B/C, depois um conjunto de "blocos
+crus" em E (terra, pedra, cascalho, graveto...) — e cai em `D` (Common) como
+padrão pra tudo que não foi listado, garantindo que **nenhum item fica sem
+tier**. Nada disso precisa recompilar pra ajustar: qualquer `Material`
+individual pode ser sobrescrito em `item-tiers:` no `config.yml`.
+
+**Exibição no tooltip** segue o padrão das imagens de referência do Hypixel:
+`ItemTierService#applyItemTiers(Player)` reescreve o lore de cada item do
+inventário do jogador (armazenamento + armadura + offhand) uma única vez
+(idempotente via flag na `PersistentDataContainer` do próprio `ItemMeta`,
+mesmo padrão de `ArmorDefenseService#applyDefenseTooltip`) — pra ferramentas,
+armas e armaduras, adiciona no fim do lore uma linha em negrito, cor do tier,
+maiúscula, `TIER {letra} {TIPO}` (ex.: `TIER C PICKAXE`); pra qualquer outro
+item (blocos, comida, ingredientes...) adiciona só o rótulo puro (`TIER D`),
+sem sufixo — igual ao exemplo de "Dirt" mostrando só a raridade, sem mais
+nenhuma linha. É aplicado no join do jogador (`ItemTierListener`) e
+recarregado a cada tick do HUD (mesmo ciclo que já reaplica a tooltip de
+Defesa), então cobre qualquer item que o jogador ganhe depois — compra na
+loja, minério minerado, drop de mob, dado por comando — sem precisar
+instrumentar cada sistema que entrega itens individualmente.

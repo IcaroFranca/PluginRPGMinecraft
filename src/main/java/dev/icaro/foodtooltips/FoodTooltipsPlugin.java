@@ -17,6 +17,8 @@ import dev.icaro.foodtooltips.global.LevelColorCommand;
 import dev.icaro.foodtooltips.global.LevelColorMenuService;
 import dev.icaro.foodtooltips.global.LevelColorService;
 import dev.icaro.foodtooltips.i18n.Language;
+import dev.icaro.foodtooltips.item.ItemTierListener;
+import dev.icaro.foodtooltips.item.ItemTierService;
 import dev.icaro.foodtooltips.mining.GemService;
 import dev.icaro.foodtooltips.mining.MiningMenuListener;
 import dev.icaro.foodtooltips.mining.MiningMenuService;
@@ -77,6 +79,7 @@ extends JavaPlugin {
         GeneralSkillService general = new GeneralSkillService();
         CombatValorService valor = new CombatValorService((Plugin)this);
         ArmorDefenseService armor = new ArmorDefenseService();
+        ItemTierService tiers = new ItemTierService((Plugin)this);
         CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor, armor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
@@ -118,6 +121,7 @@ extends JavaPlugin {
         CombatListener combatListener = new CombatListener((Plugin)this, combat, this.visuals, bestiaryProgress, this.progressBar, abilities, economy, global, stats, valor, armor);
         pm.registerEvents((Listener)combatListener, (Plugin)this);
         pm.registerEvents((Listener)new ArmorDefenseListener(armor), (Plugin)this);
+        pm.registerEvents((Listener)new ItemTierListener(tiers), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
@@ -215,6 +219,7 @@ extends JavaPlugin {
             stats.regenHealth((Player)p, naturalHealthRegenPerSecond * healthRegenMultiplier * (double)ticks / 20.0);
             armor.neutralizeVanillaArmor((Player)p);
             armor.applyDefenseTooltip((Player)p);
+            tiers.applyItemTiers((Player)p);
             hud.show((Player)p, stats.stats((Player)p), armor.defense((Player)p));
         }), 1L, ticks);
         this.getServer().getScheduler().runTaskTimer((Plugin)this, this.visuals::tick, 1L, Math.max(1L, this.getConfig().getLong("mob-visuals.update-ticks", 3L)));
@@ -231,6 +236,7 @@ extends JavaPlugin {
             stats.applySwingRange((Player)p);
             armor.neutralizeVanillaArmor((Player)p);
             armor.applyDefenseTooltip((Player)p);
+            tiers.applyItemTiers((Player)p);
             bestiaryProgress.applyBonusHealth((Player)p);
             global.migrate((Player)p);
             foodListener.refresh((Player)p);

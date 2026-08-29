@@ -106,3 +106,13 @@ global-level:
   # kind of string used in /give ... player_head[profile={properties:[{name:"textures",
   # value:"..."}]}] commands).
   icon-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvODdkODg1YjMyYjBkZDJkNmI3ZjFiNTgyYTM0MTg2ZjhhNTM3M2M0NjU4OWEyNzM0MjMxMzJiNDQ4YjgwMzQ2MiJ9fX0="
+# Per-Material tier overrides for the universal item rarity system (ItemTierService).
+# Every item already resolves to a tier on its own (equipment by material family,
+# notable items and plain "junk" blocks curated in code, Tier D as the default for
+# everything else) - this section only needs entries for the ones you want to
+# hand-tune. Values: E (gray, below Common), D (Common, white), C (Uncommon, green),
+# B (Rare, blue), A (Epic, purple), S (Legendary, gold). Example:
+# item-tiers:
+#   DIRT: E
+#   TOTEM_OF_UNDYING: S
+item-tiers: {}
