@@ -204,6 +204,13 @@ public final class ItemTierService {
                 .decoration(TextDecoration.BOLD, true)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(lore);
+        // Tooltip box border is a fixed vanilla texture (can't be recolored per-item without a
+        // custom resource pack via the tooltip_style component) - so instead the item's own
+        // name is recolored/bolded to match its tier, the closest at-a-glance signal without one.
+        Component base = meta.hasDisplayName() ? meta.displayName() : Component.translatable(item.getType().translationKey());
+        meta.displayName(base.color(tier.color())
+                .decoration(TextDecoration.BOLD, true)
+                .decoration(TextDecoration.ITALIC, false));
         meta.getPersistentDataContainer().set(this.tierKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;

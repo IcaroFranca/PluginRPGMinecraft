@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.31.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.31.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -404,3 +404,14 @@ recarregado a cada tick do HUD (mesmo ciclo que já reaplica a tooltip de
 Defesa), então cobre qualquer item que o jogador ganhe depois — compra na
 loja, minério minerado, drop de mob, dado por comando — sem precisar
 instrumentar cada sistema que entrega itens individualmente.
+
+**Contorno da caixa do tooltip não é customizável sem resource pack**: no
+vanilla, a moldura ao redor do tooltip é sempre a mesma textura fixa — só
+muda de cor via o data component `tooltip_style`, que aponta pra uma sprite
+definida num resource pack (o único estilo alternativo que o cliente já traz
+pronto é o roxo "ominous" dos itens de Trial Chambers, não dá pra ter 6 cores
+diferentes sem enviar texturas customizadas). Como alternativa sem essa
+dependência, o próprio **nome do item** agora fica colorido e em negrito na
+cor do tier (em vez de branco/padrão) — reaproveitando `Component.translatable`
+já usado em `GemService`/`MiningMenuService` pra manter o nome original do
+item quando ele não tem nome customizado.
