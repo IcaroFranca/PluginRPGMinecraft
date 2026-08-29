@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.30.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.30.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -120,6 +120,13 @@ status aparece no menu "Seus status" (`/skills`).
   habilidades que desenham o formato, não o fundo. Só o `slot` de cada
   `register()` em `CombatTreeNode` mudou — ramos, pré-requisitos, custos e
   ranks continuam exatamente os mesmos.
+  **Coluna 0 é um medidor de Nível de Combate**: como a coluna mais à
+  esquerda ficou livre em toda linha (exceto a do botão de voltar), cada
+  linha 0-4 ganha um vidro colorido mostrando o requisito de Nível de
+  Combate daquele tier (`CombatTreeMenuService#placeLevelIndicators`) —
+  verde se já alcançado, amarelo pro próximo nível que falta alcançar,
+  vermelho pros mais distantes. O tier 1 (requisito 0, sempre cumprido) não
+  tem vidro próprio, já que sua linha é onde fica o botão de voltar.
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
@@ -180,6 +187,16 @@ status aparece no menu "Seus status" (`/skills`).
   se for o Geyser-Spigot (funciona mesmo sem Floodgate). Todos por reflexão
   (sem dependência de compilação), então nenhum deles precisa estar
   presente pro plugin compilar ou rodar.
+- **Arremesso de Espada agora só atinge um inimigo por vez**: o dano do
+  arremesso ia direto por `LivingEntity#damage()`, o que fazia o mesmo
+  `CombatListener#damage` genérico das espadadas normais processar o hit —
+  incluindo o respingo do Golpe em Arco (Cleave) pros inimigos próximos, se
+  o jogador tivesse a passiva ativa. `CombatAbilityService#dealAbilityDamage`
+  (mesmo mecanismo de flag que já protegia Corte Arcano) agora cobre o
+  Arremesso de Espada também, sinalizando o hit pra `CombatListener` pular
+  toda a pilha de multiplicadores de espadada — nível, crítico, Strength,
+  Ferocity e o respingo do Cleave — então o arremesso aplica só a própria
+  fórmula de dano (fração da arma) no único alvo que realmente acertou.
 - **Números de dano flutuantes não são mais negrito**: o número de dano
   crítico (o arco-íris com ✦) usava `TextDecoration.BOLD` em cada caractere;
   removido (`MobVisualService#criticalNumber`). O número normal (não

@@ -83,8 +83,46 @@ public final class CombatTreeMenuService {
         for (Map.Entry<Integer, CombatAbility> entry : SLOT_TO_ABILITY.entrySet()) {
             v.setItem(entry.getKey(), this.nodeItem(p, entry.getValue(), l));
         }
+        this.placeLevelIndicators(v, p, l);
         p.openInventory(v);
         this.viewing.add(p.getUniqueId());
+    }
+
+    /**
+     * Column 0 doubles as a quick Combat Level gauge — one pane per tier's level
+     * requirement (tier 1's is always 0/met, and its row is the back button anyway, so
+     * this covers tiers 2-6: row 4 down to row 0). Green once reached, yellow for the
+     * very next one the player is working toward, red for the ones still further off.
+     */
+    private void placeLevelIndicators(Inventory v, Player p, Language l) {
+        int level = this.combat.progress(p).level();
+        boolean foundNext = false;
+        for (int row = 4; row >= 0; row--) {
+            int tier = 6 - row;
+            int required = this.abilities.levelRequirement(tier);
+            boolean reached = level >= required;
+            Material mat;
+            NamedTextColor color;
+            String status;
+            if (reached) {
+                mat = Material.GREEN_STAINED_GLASS_PANE;
+                color = NamedTextColor.GREEN;
+                status = l.choose("Alcançado", "Reached");
+            } else if (!foundNext) {
+                foundNext = true;
+                mat = Material.YELLOW_STAINED_GLASS_PANE;
+                color = NamedTextColor.YELLOW;
+                status = l.choose("Sendo liberado agora", "Currently unlocking");
+            } else {
+                mat = Material.RED_STAINED_GLASS_PANE;
+                color = NamedTextColor.RED;
+                status = l.choose("Não alcançado", "Not reached");
+            }
+            List<Component> lore = List.of(
+                    this.text(l.choose("Nível de Combate necessário: ", "Combat Level required: ") + required, NamedTextColor.GRAY),
+                    this.text(status, color));
+            v.setItem(row * 9, this.item(mat, l.choose("Nível de Combate: " + required, "Combat Level: " + required), lore, color));
+        }
     }
 
     public boolean viewing(Player p) {

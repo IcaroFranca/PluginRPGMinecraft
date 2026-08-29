@@ -97,7 +97,11 @@ implements Listener {
                 if (hit != null && (entity2 = hit.getHitEntity()) instanceof LivingEntity) {
                     LivingEntity target = (LivingEntity)entity2;
                     AttributeInstance attack = p.getAttribute(Attribute.ATTACK_DAMAGE);
-                    target.damage((attack == null ? 1.0 : attack.getValue()) * SwordThrowListener.this.abilities.swordThrowDamageFraction(p), (Entity)p);
+                    double amount = (attack == null ? 1.0 : attack.getValue()) * SwordThrowListener.this.abilities.swordThrowDamageFraction(p);
+                    // Via dealAbilityDamage, not target.damage() directly: flags the hit so
+                    // CombatListener skips Cleave's splash (and Ferocity's extra hits) — a
+                    // thrown sword must only ever land on the one enemy it actually struck.
+                    SwordThrowListener.this.abilities.dealAbilityDamage(p, target, amount);
                     this.finish();
                     return;
                 }

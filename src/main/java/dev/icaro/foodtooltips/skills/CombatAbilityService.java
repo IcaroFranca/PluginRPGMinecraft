@@ -63,7 +63,7 @@ public final class CombatAbilityService {
     private final Map<UUID, Integer> attackCounter = new HashMap<>();
     private final Map<UUID, Long> arcaneSlashCooldowns = new HashMap<>();
     private final Map<UUID, Long> vitalTouchCooldowns = new HashMap<>();
-    private final Set<UUID> magicDamageInFlight = new HashSet<>();
+    private final Set<UUID> abilityDamageInFlight = new HashSet<>();
 
     public CombatAbilityService(Plugin p, CombatSkillService combat, PlayerStatsService stats, CombatValorService valor, ArmorDefenseService armor) {
         this.plugin = p;
@@ -318,9 +318,32 @@ public final class CombatAbilityService {
         return CombatTreeMath.swordThrowDamageFraction(this.rank(p, CombatAbility.SWORD_THROW), this.maxRank(CombatAbility.SWORD_THROW));
     }
 
-    /** Whether the currently-in-progress hostile damage event was caused by a magic-damage ability cast (Arcane Slash). */
-    public boolean isMagicDamageInFlight(Player p) {
-        return this.magicDamageInFlight.contains(p.getUniqueId());
+    /**
+     * Whether the currently-in-progress hostile damage event was caused by a special
+     * ability dealing its own pre-computed damage (Arcane Slash, Sword Throw) rather
+     * than a normal melee swing — see {@link #dealAbilityDamage}. {@link
+     * dev.icaro.foodtooltips.combat.CombatListener#damage} checks this to skip the
+     * melee multiplier stack (level/crit/strength/mob bonus) and, critically, Ferocity's
+     * extra hits and Cleave's splash — so abilities like Sword Throw only ever land on
+     * the one target they actually hit, never splashing onto nearby enemies too.
+     */
+    public boolean isAbilityDamageInFlight(Player p) {
+        return this.abilityDamageInFlight.contains(p.getUniqueId());
+    }
+
+    /**
+     * Deals damage from a special (non-melee) ability the same safe way Arcane Slash
+     * already did: flagged via {@link #isAbilityDamageInFlight} for the duration of the
+     * call so {@code CombatListener#damage} bypasses melee multipliers/Ferocity/Cleave
+     * for it.
+     */
+    public void dealAbilityDamage(Player p, LivingEntity target, double amount) {
+        this.abilityDamageInFlight.add(p.getUniqueId());
+        try {
+            target.damage(amount, p);
+        } finally {
+            this.abilityDamageInFlight.remove(p.getUniqueId());
+        }
     }
 
     // ---- Second Wind (used by CombatListener) -----------------------------------
@@ -416,12 +439,7 @@ public final class CombatAbilityService {
         this.stats.withdrawMana(p, manaCost);
         this.arcaneSlashCooldowns.put(p.getUniqueId(), now + CombatTreeMath.arcaneSlashCooldownMillis(rank, max));
         double damage = CombatTreeMath.arcaneSlashDamage(rank, max, s.intelligence(), s.abilityDamage());
-        this.magicDamageInFlight.add(p.getUniqueId());
-        try {
-            target.damage(damage, p);
-        } finally {
-            this.magicDamageInFlight.remove(p.getUniqueId());
-        }
+        this.dealAbilityDamage(p, target, damage);
         return CastResult.SUCCESS;
     }
 

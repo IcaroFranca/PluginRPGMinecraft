@@ -137,8 +137,11 @@ public final class CombatListener implements Listener {
         if (p == null || !(e.getEntity() instanceof LivingEntity target)) {
             return;
         }
-        if (this.abilities.isMagicDamageInFlight(p)) {
-            // Magic damage (Arcane Slash) bypasses melee multipliers entirely; just show feedback.
+        if (this.abilities.isAbilityDamageInFlight(p)) {
+            // Special-ability damage (Arcane Slash, Sword Throw) bypasses melee multipliers,
+            // Ferocity's extra hits and Cleave's splash entirely — just show feedback. This is
+            // what keeps Sword Throw single-target: without it, Cleave (if enabled) would
+            // splash the throw's hit onto nearby enemies too.
             if (!(target instanceof Player)) {
                 this.visuals.track(target);
                 this.visuals.damageNumber(target, e.getFinalDamage(), false);
