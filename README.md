@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.31.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.31.2.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -415,3 +415,14 @@ dependência, o próprio **nome do item** agora fica colorido e em negrito na
 cor do tier (em vez de branco/padrão) — reaproveitando `Component.translatable`
 já usado em `GemService`/`MiningMenuService` pra manter o nome original do
 item quando ele não tem nome customizado.
+
+**Bug corrigido: itens não empilhavam entre si.** A tooltip de tier só é
+aplicada no tick seguinte a um item entrar no inventário (compra, minério
+minerado, drop de mob...); nesse intervalo, o item novo ainda não tem a
+tag "TIER X" enquanto uma pilha já existente do mesmo item já tem — o jogo
+vê metadados diferentes e não junta as pilhas, e elas ficavam separadas
+mesmo depois de as duas ganharem a mesma tag. `ItemTierService#applyItemTiers`
+agora reagrupa as pilhas iguais do inventário (`coalesce`, respeitando o
+stack size máximo) logo depois de aplicar a tag, todo tick — cura tanto essa
+fragmentação causada pelo sistema de tiers quanto qualquer outra pilha
+partida por acidente.

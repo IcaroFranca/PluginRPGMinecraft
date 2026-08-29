@@ -164,11 +164,25 @@ public final class ItemTierService {
         Language l = Language.of(p);
         PlayerInventory inv = p.getInventory();
         ItemStack[] storage = inv.getStorageContents();
+        boolean changed = false;
         for (int i = 0; i < storage.length; i++) {
             ItemStack updated = this.tooltip(storage[i], l);
             if (updated != null) {
-                inv.setItem(i, updated);
+                storage[i] = updated;
+                changed = true;
             }
+        }
+        // A freshly-received item (bought, mined, looted, given...) only gets its tier
+        // tooltip applied here, one tick after it lands in the inventory - for that one
+        // tick its lore/name doesn't match an already-tagged stack of the same item, so
+        // the game can't merge them and they end up as two separate slots even once both
+        // are tagged identically. Re-coalescing every tick, right after tagging, heals
+        // that split (and any other stray fragmentation) instead of leaving it stuck.
+        if (this.coalesce(storage)) {
+            changed = true;
+        }
+        if (changed) {
+            inv.setStorageContents(storage);
         }
         ItemStack[] armor = inv.getArmorContents();
         for (int i = 0; i < armor.length; i++) {
@@ -214,5 +228,36 @@ public final class ItemTierService {
         meta.getPersistentDataContainer().set(this.tierKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Merges any same-item stacks in {@code storage} into as few slots as possible, respecting max stack size. Returns true if anything moved. */
+    private boolean coalesce(ItemStack[] storage) {
+        boolean changed = false;
+        for (int i = 0; i < storage.length; i++) {
+            ItemStack into = storage[i];
+            if (into == null || into.isEmpty() || into.getAmount() >= into.getMaxStackSize()) {
+                continue;
+            }
+            for (int j = i + 1; j < storage.length; j++) {
+                ItemStack from = storage[j];
+                if (from == null || from.isEmpty() || !into.isSimilar(from)) {
+                    continue;
+                }
+                int move = Math.min(into.getMaxStackSize() - into.getAmount(), from.getAmount());
+                if (move <= 0) {
+                    continue;
+                }
+                into.setAmount(into.getAmount() + move);
+                from.setAmount(from.getAmount() - move);
+                if (from.getAmount() <= 0) {
+                    storage[j] = null;
+                }
+                changed = true;
+                if (into.getAmount() >= into.getMaxStackSize()) {
+                    break;
+                }
+            }
+        }
+        return changed;
     }
 }
