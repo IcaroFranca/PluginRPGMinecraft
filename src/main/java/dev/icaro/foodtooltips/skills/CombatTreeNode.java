@@ -47,6 +47,18 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
     }
 
     static {
+        // ---- Slot layout ---- inspired by Hypixel SkyBlock's Heart of the Mountain /
+        // Heart of the Forest: instead of 3 straight vertical columns converging on a
+        // single point, each branch zigzags — a node's slot drifts left/right off its
+        // prerequisite's column rather than sitting directly above it, and single roots
+        // fan out into multiple tier-2 children (VAMPIRISM alone fans into 3: BLOOD_LUST,
+        // TREASURE_HUNTER, VITAL_TOUCH). The overall silhouette still narrows going up
+        // (root row spans 5 columns, the middle rows spread to 7-8, then it tapers back
+        // down to APEX_WARRIOR alone at the peak) — same "mountain" read as HOTM's tree,
+        // but this time the actual ability icons draw the shape, not just the
+        // background filler. Branches/prerequisites/costs/ranks are unchanged — this
+        // block only touches each register() call's slot argument.
+
         // ---- Fury (offense) ---- ordered so each node's max-rank payoff is >= the one
         // before it: RUTHLESS_STRIKES (+10% crit, flat) < EXECUTIONER/ARMOR_PIERCER (+25%
         // dmg, both conditional) < BERSERKER (+30% dmg, conditional) < CRITICAL_MASTERY
@@ -55,33 +67,33 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
         // the same depth takes the same number of ranks to max, so the grind scales evenly
         // instead of jumping around within a tier.
         register(CombatAbility.RUTHLESS_STRIKES, CombatBranch.FURY, 10, Kind.PASSIVE, 51);
-        register(CombatAbility.EXECUTIONER, CombatBranch.FURY, 14, Kind.PASSIVE, 42, CombatAbility.RUTHLESS_STRIKES);
-        register(CombatAbility.ARMOR_PIERCER, CombatBranch.FURY, 18, Kind.PASSIVE, 33, CombatAbility.EXECUTIONER);
+        register(CombatAbility.EXECUTIONER, CombatBranch.FURY, 14, Kind.PASSIVE, 43, CombatAbility.RUTHLESS_STRIKES);
+        register(CombatAbility.ARMOR_PIERCER, CombatBranch.FURY, 18, Kind.PASSIVE, 35, CombatAbility.EXECUTIONER);
         register(CombatAbility.BERSERKER, CombatBranch.FURY, 22, Kind.PASSIVE, 24, CombatAbility.ARMOR_PIERCER);
-        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 26, Kind.PASSIVE, 15, CombatAbility.BERSERKER);
+        register(CombatAbility.CRITICAL_MASTERY, CombatBranch.FURY, 26, Kind.PASSIVE, 14, CombatAbility.BERSERKER);
 
         // ---- Sustain (blood) ----
         register(CombatAbility.VAMPIRISM, CombatBranch.SUSTAIN, 10, Kind.PASSIVE, 49);
-        register(CombatAbility.BLOOD_LUST, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 40, CombatAbility.VAMPIRISM);
+        register(CombatAbility.BLOOD_LUST, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 39, CombatAbility.VAMPIRISM);
         register(CombatAbility.TREASURE_HUNTER, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 41, CombatAbility.VAMPIRISM);
-        register(CombatAbility.UNDYING_WILL, CombatBranch.SUSTAIN, 18, Kind.PASSIVE, 31, CombatAbility.BLOOD_LUST);
+        register(CombatAbility.UNDYING_WILL, CombatBranch.SUSTAIN, 18, Kind.PASSIVE, 30, CombatAbility.BLOOD_LUST);
         register(CombatAbility.SOUL_HARVEST, CombatBranch.SUSTAIN, 22, Kind.PASSIVE, 22, CombatAbility.UNDYING_WILL);
-        register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 26, Kind.PASSIVE, 13, CombatAbility.SOUL_HARVEST);
+        register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 26, Kind.PASSIVE, 12, CombatAbility.SOUL_HARVEST);
 
         // ---- Utility (precision) ---- root is a minor passive (like every other branch's
         // root), not a full active ability: SWORD_THROW (an active with real burst damage)
         // now costs a tier more than the other branches' cheapest node, same as ARCANE_SLASH
         // and VITAL_TOUCH already do in Synergy.
         register(CombatAbility.HUNTERS_INSTINCT, CombatBranch.UTILITY, 10, Kind.PASSIVE, 47);
-        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 14, Kind.ACTIVE_KEYBIND, 38, CombatAbility.HUNTERS_INSTINCT);
-        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 18, Kind.PASSIVE, 29, CombatAbility.SWORD_THROW);
+        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 14, Kind.ACTIVE_KEYBIND, 37, CombatAbility.HUNTERS_INSTINCT);
+        register(CombatAbility.CLEAVE, CombatBranch.UTILITY, 18, Kind.PASSIVE, 28, CombatAbility.SWORD_THROW);
         register(CombatAbility.RELENTLESS, CombatBranch.UTILITY, 22, Kind.PASSIVE, 20, CombatAbility.CLEAVE);
 
         // ---- Synergy (bridges between branches) ----
-        register(CombatAbility.VITAL_TOUCH, CombatBranch.SYNERGY, 14, Kind.ACTIVE_MENU, 39, CombatAbility.VAMPIRISM);
-        register(CombatAbility.COMBAT_MASTERY, CombatBranch.SYNERGY, 18, Kind.PASSIVE, 30,
+        register(CombatAbility.VITAL_TOUCH, CombatBranch.SYNERGY, 14, Kind.ACTIVE_MENU, 40, CombatAbility.VAMPIRISM);
+        register(CombatAbility.COMBAT_MASTERY, CombatBranch.SYNERGY, 18, Kind.PASSIVE, 29,
                 CombatAbility.BLOOD_LUST, CombatAbility.SWORD_THROW);
-        register(CombatAbility.ARCANE_SLASH, CombatBranch.SYNERGY, 18, Kind.ACTIVE_MENU, 34, CombatAbility.EXECUTIONER);
+        register(CombatAbility.ARCANE_SLASH, CombatBranch.SYNERGY, 18, Kind.ACTIVE_MENU, 33, CombatAbility.EXECUTIONER);
 
         // ---- Capstone ---- the longest grind in the tree: 32 ranks.
         register(CombatAbility.APEX_WARRIOR, CombatBranch.CAPSTONE, 32, Kind.PASSIVE, 4,

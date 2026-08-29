@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.29.3.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.30.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -107,6 +107,19 @@ status aparece no menu "Seus status" (`/skills`).
   e a cabeça do jogador (moeda/legenda) no canto inferior direito. O
   preenchimento dos slots vazios é vidro preto (não carvão — nós bloqueados
   já usam esse ícone, então um filler de carvão os esconderia no fundo).
+  **Layout inspirado em Heart of the Mountain/Heart of the Forest (Hypixel
+  SkyBlock)**: em vez das 3 colunas retas de antes convergindo num só ponto,
+  cada nó agora fica deslocado (esquerda/direita) em relação à coluna do seu
+  pré-requisito — RUTHLESS_STRIKES/`VAMPIRISM`/`HUNTERS_INSTINCT` (as raízes)
+  ficam nas mesmas colunas de sempre, mas os filhos delas zigzagueiam a
+  partir daí, e VAMPIRISM sozinha se abre em 3 caminhos (`BLOOD_LUST`,
+  `TREASURE_HUNTER`, `VITAL_TOUCH`). A silhueta ainda afunila conforme sobe
+  (linha das raízes ocupa 5 colunas, o meio da árvore chega a ocupar 7-8,
+  depois estreita de novo até `APEX_WARRIOR` sozinho no topo) — a mesma
+  leitura de "montanha" de antes, só que agora são os próprios ícones das
+  habilidades que desenham o formato, não o fundo. Só o `slot` de cada
+  `register()` em `CombatTreeNode` mudou — ramos, pré-requisitos, custos e
+  ranks continuam exatamente os mesmos.
 - **Tooltip detalhado**: cada nó mostra, além da descrição, uma leitura numérica
   "nível atual → próximo nível" de cada stat que ele concede
   (`CombatAbilityService#statPreview`), ex.: "Dano: 22.2% → 26.7%",
