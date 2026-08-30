@@ -119,4 +119,8 @@ builder-wand:
   # Max blocks the Builder's Wand can extend in one right-click (a safety cap, not a
   # gameplay limit - raise it if 64-block lines/columns aren't enough for your builds).
   max-length: 64
+destroyer-hand:
+  # Max blocks the Destroyer's Hand can clear in one right-click - same safety cap
+  # idea as builder-wand.max-length, just for the opposite direction.
+  max-length: 64
 item-tiers: {}

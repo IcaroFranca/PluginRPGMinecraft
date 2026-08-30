@@ -7,6 +7,8 @@ import dev.icaro.foodtooltips.builder.BuilderWandListener;
 import dev.icaro.foodtooltips.builder.BuilderWandService;
 import dev.icaro.foodtooltips.combat.CombatListener;
 import dev.icaro.foodtooltips.combat.MobVisualService;
+import dev.icaro.foodtooltips.destroyer.DestroyerHandListener;
+import dev.icaro.foodtooltips.destroyer.DestroyerHandService;
 import dev.icaro.foodtooltips.economy.EconomyService;
 import dev.icaro.foodtooltips.food.FoodTooltipListener;
 import dev.icaro.foodtooltips.food.FoodTooltipService;
@@ -78,6 +80,7 @@ extends JavaPlugin {
         ArmorDefenseService armor = new ArmorDefenseService();
         ItemTierService tiers = new ItemTierService((Plugin)this);
         BuilderWandService builderWand = new BuilderWandService((Plugin)this, tiers);
+        DestroyerHandService destroyerHand = new DestroyerHandService((Plugin)this, tiers);
         CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
@@ -120,6 +123,7 @@ extends JavaPlugin {
         pm.registerEvents((Listener)new ArmorDefenseListener(armor), (Plugin)this);
         pm.registerEvents((Listener)new ItemTierListener(tiers), (Plugin)this);
         pm.registerEvents((Listener)new BuilderWandListener(builderWand), (Plugin)this);
+        pm.registerEvents((Listener)new DestroyerHandListener(destroyerHand), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
@@ -183,6 +187,24 @@ extends JavaPlugin {
             }
             target.getInventory().addItem(builderWand.create(Language.of(target)));
             s.sendMessage((Component)Component.text((String)(this.text(s, "Varinha do Construtor entregue a ", "Builder's Wand given to ") + target.getName() + "."), (TextColor)NamedTextColor.GREEN));
+            return true;
+        });
+        this.getCommand("destroyerhand").setExecutor((s, c, l, a) -> {
+            Player target;
+            if (a.length >= 1) {
+                target = Bukkit.getPlayerExact((String)a[0]);
+                if (target == null) {
+                    s.sendMessage((Component)Component.text((String)this.text(s, "Jogador não encontrado ou offline.", "Player not found or offline."), (TextColor)NamedTextColor.RED));
+                    return true;
+                }
+            } else if (s instanceof Player) {
+                target = (Player)s;
+            } else {
+                s.sendMessage((Component)Component.text((String)"Usage: /destroyerhand [player]"));
+                return true;
+            }
+            target.getInventory().addItem(destroyerHand.create(Language.of(target)));
+            s.sendMessage((Component)Component.text((String)(this.text(s, "Mão do Destruidor entregue a ", "Destroyer's Hand given to ") + target.getName() + "."), (TextColor)NamedTextColor.GREEN));
             return true;
         });
         this.getCommand("skills").setExecutor((s, c, l, a) -> {

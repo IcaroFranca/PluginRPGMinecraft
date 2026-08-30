@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.33.2.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.34.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -522,3 +522,40 @@ chama isso com `ItemTier.S` ao criar a varinha em `create()`. Na leitura,
 `tierOf(ItemMeta, Material)` checa primeiro esse valor gravado no item antes
 de cair no `tierOf(Material)` de sempre — é assim que o mesmo Stick de
 sempre pode ter uma tier diferente sem afetar mais nenhum item no jogo.
+
+## Mão do Destruidor (`dev.icaro.foodtooltips.destroyer`)
+
+O espelho da Varinha do Construtor: item novo, também só disponível via
+comando por enquanto (`/destroyerhand [player]`, permissão
+`foodtooltips.admin`). Clique direito num bloco já colocado limpa esse
+bloco e todo bloco do mesmo `Material` contíguo a ele na mesma direção
+implícita na face clicada — a mesma convenção da varinha (topo/base =
+coluna vertical, qualquer face lateral = linha horizontal), só que ao
+invés de construir a partir do bloco clicado ela apaga a partir dele,
+parando no primeiro bloco diferente (ar incluso) ou no limite configurável
+(`destroyer-hand.max-length`, padrão 64). `DestroyerHandService#clear`
+guarda o `BlockData` original de cada bloco removido antes de apagar, pelo
+mesmo motivo que a varinha copia o `BlockData` ao construir: escadas,
+troncos e outros blocos com orientação voltam do jeito certo se a ação for
+desfeita.
+
+Não mexe em drop table de verdade (sem olhar ferramenta, encantamento ou
+loot table) — é uma troca crua material-por-material, espelhando a
+simplificação que a própria varinha já faz pro lado de construir: no
+Criativo não devolve nada (mesma regra do próprio modo Criativo), na
+Sobrevivência devolve um item daquele `Material` pra cada bloco limpo
+(dropando no chão o que não couber no inventário).
+
+**Shift + clique esquerdo desfaz a última limpeza**, do mesmo jeito que na
+varinha: bota os blocos de volta exatamente como estavam (mesmo
+`BlockData`) e, só se aquela limpeza tiver devolvido itens (Sobrevivência),
+tira de volta do inventário a mesma quantidade daquele material — melhor
+esforço, se o jogador já não tiver mais o suficiente ele tira o que
+sobrar. Também é desfazer de 1 nível só, e cancela a quebra do bloco
+embaixo da mira do mesmo jeito.
+
+O item em si é um `Bone` identificado por uma flag própria na
+`PersistentDataContainer` (não pelo nome), e — assim como a varinha —
+tem sua tier forçada pra `S` via `ItemTierService#forceTier` ao ser
+criado, já que um `Bone` puro cairia em `C` por padrão (está em
+`C_ITEMS` no `ItemTierService`).
