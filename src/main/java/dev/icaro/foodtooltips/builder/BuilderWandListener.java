@@ -11,6 +11,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
@@ -23,11 +24,23 @@ public final class BuilderWandListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void use(PlayerInteractEvent e) {
-        if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.getHand() != EquipmentSlot.HAND) {
+        if (e.getHand() != EquipmentSlot.HAND || !this.wand.isWand(e.getItem())) {
             return;
         }
-        ItemStack hand = e.getItem();
-        if (!this.wand.isWand(hand)) {
+        Player p = e.getPlayer();
+        Language l = Language.of(p);
+        if (p.isSneaking() && (e.getAction() == Action.LEFT_CLICK_BLOCK || e.getAction() == Action.LEFT_CLICK_AIR)) {
+            // Shift + left-click undoes instead of breaking whatever block was clicked.
+            e.setCancelled(true);
+            int undone = this.wand.undo(p);
+            if (undone <= 0) {
+                p.sendActionBar(Component.text(l.choose("Nada pra desfazer.", "Nothing to undo."), NamedTextColor.RED));
+            } else {
+                p.sendActionBar(Component.text("-" + undone + " " + l.choose("blocos (desfeito)", "blocks (undone)"), NamedTextColor.GOLD));
+            }
+            return;
+        }
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
         }
         // Holding the wand always means "build", never "open this chest/door/etc.".
@@ -37,13 +50,16 @@ public final class BuilderWandListener implements Listener {
         if (clicked == null || face == null) {
             return;
         }
-        Player p = e.getPlayer();
         int placed = this.wand.extend(p, clicked, face);
-        Language l = Language.of(p);
         if (placed <= 0) {
             p.sendActionBar(Component.text(l.choose("Nada pra estender aqui.", "Nothing to extend here."), NamedTextColor.RED));
         } else {
             p.sendActionBar(Component.text("+" + placed + " " + l.choose("blocos", "blocks"), NamedTextColor.GREEN));
         }
+    }
+
+    @EventHandler
+    public void quit(PlayerQuitEvent e) {
+        this.wand.forget(e.getPlayer().getUniqueId());
     }
 }

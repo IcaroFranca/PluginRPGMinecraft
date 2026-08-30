@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.33.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.33.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -500,3 +500,13 @@ O item em si é um `Stick` identificado por uma flag na
 reconhecimento) — clicar com ele sempre cancela a interação padrão do bloco
 (não abre baú/porta por engano), já que segurando a varinha a intenção é
 sempre construir.
+
+**Shift + clique esquerdo desfaz a última extensão**: `BuilderWandService`
+guarda só a ação mais recente por jogador (bloco, lista dos blocos
+colocados e se ela cobrou algo do inventário) — desfazer bota ar de volta
+nesses blocos e, só se a extensão original tiver sido na Sobrevivência,
+devolve a mesma quantidade daquele material (dropando no chão o que não
+couber no inventário). É desfazer de 1 nível só, não uma pilha de
+histórico. Shift + clique esquerdo com a varinha na mão também cancela a
+quebra do bloco embaixo da mira, então não tem risco de minerar por
+engano ao tentar desfazer.

@@ -1,7 +1,11 @@
 package dev.icaro.foodtooltips.builder;
 
 import dev.icaro.foodtooltips.i18n.Language;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -30,8 +34,13 @@ import org.bukkit.plugin.Plugin;
  * {@code FoodTooltipsPlugin}'s {@code /builderwand} executor) - no drop/craft source yet.
  */
 public final class BuilderWandService {
+    /** One player's last extension: the exact blocks it placed, and whether it paid for them (so undo knows whether to refund). */
+    private record LastAction(List<Block> placed, Material material, boolean consumed) {
+    }
+
     private final NamespacedKey wandKey;
     private final int maxLength;
+    private final Map<UUID, LastAction> lastAction = new HashMap<>();
 
     public BuilderWandService(Plugin plugin) {
         this.wandKey = new NamespacedKey(plugin, "builder_wand");
@@ -46,6 +55,7 @@ public final class BuilderWandService {
         meta.lore(List.of(
                 this.line(l.choose("Clique direito num bloco pra estender", "Right-click a block to extend"), NamedTextColor.GRAY),
                 this.line(l.choose("toda a linha ou coluna dele.", "its whole line or column."), NamedTextColor.GRAY),
+                this.line(l.choose("Shift + clique esquerdo desfaz a última ação.", "Shift + left-click undoes the last action."), NamedTextColor.GRAY),
                 Component.empty(),
                 this.line(l.choose("Criativo: não gasta blocos.", "Creative: doesn't use blocks."), NamedTextColor.DARK_GRAY),
                 this.line(l.choose("Sobrevivência: precisa ter os blocos.", "Survival: needs the blocks."), NamedTextColor.DARK_GRAY)));
@@ -54,6 +64,11 @@ public final class BuilderWandService {
         meta.getPersistentDataContainer().set(this.wandKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         return item;
+    }
+
+    /** Drops the remembered last action for a player (call on quit - no point holding Block references for an offline player). */
+    public void forget(UUID playerId) {
+        this.lastAction.remove(playerId);
     }
 
     public boolean isWand(ItemStack item) {
@@ -77,7 +92,7 @@ public final class BuilderWandService {
         }
         BlockData data = clicked.getBlockData();
         boolean creative = p.getGameMode() == GameMode.CREATIVE;
-        int placed = 0;
+        List<Block> placedBlocks = new ArrayList<>();
         Block cursor = clicked.getRelative(face);
         for (int i = 0; i < this.maxLength; i++) {
             if (!cursor.getType().isAir()) {
@@ -87,10 +102,46 @@ public final class BuilderWandService {
                 break;
             }
             cursor.setBlockData(data);
-            placed++;
+            placedBlocks.add(cursor);
             cursor = cursor.getRelative(face);
         }
-        return placed;
+        if (!placedBlocks.isEmpty()) {
+            this.lastAction.put(p.getUniqueId(), new LastAction(placedBlocks, material, !creative));
+        }
+        return placedBlocks.size();
+    }
+
+    /**
+     * Shift + left-click's counterpart to {@link #extend}: puts back air where the last
+     * extension placed blocks, and - only if that extension actually paid for them
+     * (Survival) - returns the same count of that material to the player's inventory,
+     * dropping anything that doesn't fit. Only remembers one action per player, matching
+     * "undo the last thing I did" rather than a full undo stack.
+     */
+    public int undo(Player p) {
+        LastAction action = this.lastAction.remove(p.getUniqueId());
+        if (action == null) {
+            return 0;
+        }
+        for (Block b : action.placed()) {
+            b.setType(Material.AIR);
+        }
+        if (action.consumed()) {
+            this.giveBack(p, action.material(), action.placed().size());
+        }
+        return action.placed().size();
+    }
+
+    /** Hands back {@code count} of {@code material}, splitting into full stacks and dropping whatever doesn't fit in the inventory. */
+    private void giveBack(Player p, Material material, int count) {
+        int max = material.getMaxStackSize();
+        while (count > 0) {
+            int amount = Math.min(max, count);
+            count -= amount;
+            for (ItemStack leftover : p.getInventory().addItem(new ItemStack(material, amount)).values()) {
+                p.getWorld().dropItem(p.getLocation(), leftover);
+            }
+        }
     }
 
     /** Removes one item of {@code material} from the player's main storage; returns false if none was found. */
