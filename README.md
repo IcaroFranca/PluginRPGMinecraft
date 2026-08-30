@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.32.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.33.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -479,3 +479,24 @@ level-based. Só conta nós *desbloqueados* (`unlocked`), não *ativados*
 shift-clique encolheria a capacidade visível e prenderia itens já guardados
 além do novo limite menor — por isso o menu da árvore recusa esse
 shift-clique nesses nós com uma mensagem explicando o motivo.
+
+## Varinha do Construtor (`dev.icaro.foodtooltips.builder`)
+
+Item novo, só disponível via comando por enquanto (`/builderwand [player]`,
+permissão `foodtooltips.admin`): clique direito num bloco já colocado estende
+esse bloco em toda a linha ou coluna a partir dele — a direção depende da
+face clicada (topo/base = coluna vertical, qualquer face lateral = linha
+horizontal). Segue substituindo blocos de ar na direção escolhida até achar
+um bloco que não seja ar, até o limite configurável
+(`builder-wand.max-length`, padrão 64), ou — só na Sobrevivência — até
+acabar aquele bloco no inventário do jogador. No Criativo não gasta nada
+(mesma regra do próprio modo Criativo). `BuilderWandService#extend` copia o
+`BlockData` inteiro do bloco clicado (não só o `Material`), então escadas,
+troncos e outros blocos com orientação saem virados do jeito certo, não só
+no padrão.
+
+O item em si é um `Stick` identificado por uma flag na
+`PersistentDataContainer` (não pelo nome, então renomear não quebra o
+reconhecimento) — clicar com ele sempre cancela a interação padrão do bloco
+(não abre baú/porta por engano), já que segurando a varinha a intenção é
+sempre construir.

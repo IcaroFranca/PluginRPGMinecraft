@@ -3,6 +3,8 @@ package dev.icaro.foodtooltips;
 import dev.icaro.foodtooltips.bestiary.BestiaryListener;
 import dev.icaro.foodtooltips.bestiary.BestiaryMenuService;
 import dev.icaro.foodtooltips.bestiary.BestiaryProgressService;
+import dev.icaro.foodtooltips.builder.BuilderWandListener;
+import dev.icaro.foodtooltips.builder.BuilderWandService;
 import dev.icaro.foodtooltips.combat.CombatListener;
 import dev.icaro.foodtooltips.combat.MobVisualService;
 import dev.icaro.foodtooltips.economy.EconomyService;
@@ -75,6 +77,7 @@ extends JavaPlugin {
         CombatValorService valor = new CombatValorService((Plugin)this);
         ArmorDefenseService armor = new ArmorDefenseService();
         ItemTierService tiers = new ItemTierService((Plugin)this);
+        BuilderWandService builderWand = new BuilderWandService((Plugin)this);
         CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
@@ -116,6 +119,7 @@ extends JavaPlugin {
         pm.registerEvents((Listener)combatListener, (Plugin)this);
         pm.registerEvents((Listener)new ArmorDefenseListener(armor), (Plugin)this);
         pm.registerEvents((Listener)new ItemTierListener(tiers), (Plugin)this);
+        pm.registerEvents((Listener)new BuilderWandListener(builderWand), (Plugin)this);
         SwordThrowListener swordThrow = new SwordThrowListener((Plugin)this, abilities);
         pm.registerEvents((Listener)swordThrow, (Plugin)this);
         pm.registerEvents((Listener)new BedrockSwordThrowListener(swordThrow), (Plugin)this);
@@ -161,6 +165,24 @@ extends JavaPlugin {
             catch (IllegalArgumentException ex) {
                 s.sendMessage((Component)Component.text((String)(this.text(s, "Uso: ", "Usage: ") + "/coins <player> <set|give> <amount>"), (TextColor)NamedTextColor.RED));
             }
+            return true;
+        });
+        this.getCommand("builderwand").setExecutor((s, c, l, a) -> {
+            Player target;
+            if (a.length >= 1) {
+                target = Bukkit.getPlayerExact((String)a[0]);
+                if (target == null) {
+                    s.sendMessage((Component)Component.text((String)this.text(s, "Jogador não encontrado ou offline.", "Player not found or offline."), (TextColor)NamedTextColor.RED));
+                    return true;
+                }
+            } else if (s instanceof Player) {
+                target = (Player)s;
+            } else {
+                s.sendMessage((Component)Component.text((String)"Usage: /builderwand [player]"));
+                return true;
+            }
+            target.getInventory().addItem(builderWand.create(Language.of(target)));
+            s.sendMessage((Component)Component.text((String)(this.text(s, "Varinha do Construtor entregue a ", "Builder's Wand given to ") + target.getName() + "."), (TextColor)NamedTextColor.GREEN));
             return true;
         });
         this.getCommand("skills").setExecutor((s, c, l, a) -> {

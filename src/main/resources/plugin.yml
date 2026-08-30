@@ -1,5 +1,5 @@
 name: NexusRPG
-version: '0.32.0'
+version: '0.33.0'
 main: dev.icaro.foodtooltips.FoodTooltipsPlugin
 api-version: '26.2'
 author: icaro
@@ -33,6 +33,10 @@ commands:
   levelcolor:
     description: Opens the Global Level color theme menu.
     usage: /levelcolor [theme]
+  builderwand:
+    description: Gives the Builder's Wand (admin-only for now).
+    usage: /builderwand [player]
+    permission: foodtooltips.admin
 permissions:
   foodtooltips.admin:
     default: op
