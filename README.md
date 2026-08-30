@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.33.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.33.2.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -510,3 +510,15 @@ couber no inventário). É desfazer de 1 nível só, não uma pilha de
 histórico. Shift + clique esquerdo com a varinha na mão também cancela a
 quebra do bloco embaixo da mira, então não tem risco de minerar por
 engano ao tentar desfazer.
+
+A varinha é um `Stick` puro — que por padrão cairia em `JUNK_ITEMS` (Tier E)
+no `ItemTierService`, já que `tierOf(Material)` não distingue "um Stick
+comum" de "a varinha". Como ela é uma ferramenta única, não faz sentido
+mexer na tabela de `Material` (isso rebaixaria todo Stick do jogo junto).
+Em vez disso, `ItemTierService#forceTier(ItemMeta, ItemTier)` grava a tier
+direto na `PersistentDataContainer` do item específico (chave separada da
+usada pelo override de `Material` em `item-tiers`), e `BuilderWandService`
+chama isso com `ItemTier.S` ao criar a varinha em `create()`. Na leitura,
+`tierOf(ItemMeta, Material)` checa primeiro esse valor gravado no item antes
+de cair no `tierOf(Material)` de sempre — é assim que o mesmo Stick de
+sempre pode ter uma tier diferente sem afetar mais nenhum item no jogo.

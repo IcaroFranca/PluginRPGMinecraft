@@ -1,6 +1,8 @@
 package dev.icaro.foodtooltips.builder;
 
 import dev.icaro.foodtooltips.i18n.Language;
+import dev.icaro.foodtooltips.item.ItemTier;
+import dev.icaro.foodtooltips.item.ItemTierService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,11 +42,13 @@ public final class BuilderWandService {
 
     private final NamespacedKey wandKey;
     private final int maxLength;
+    private final ItemTierService tiers;
     private final Map<UUID, LastAction> lastAction = new HashMap<>();
 
-    public BuilderWandService(Plugin plugin) {
+    public BuilderWandService(Plugin plugin, ItemTierService tiers) {
         this.wandKey = new NamespacedKey(plugin, "builder_wand");
         this.maxLength = Math.max(1, plugin.getConfig().getInt("builder-wand.max-length", 64));
+        this.tiers = tiers;
     }
 
     public ItemStack create(Language l) {
@@ -62,6 +66,9 @@ public final class BuilderWandService {
         meta.setEnchantmentGlintOverride(true);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
         meta.getPersistentDataContainer().set(this.wandKey, PersistentDataType.BYTE, (byte) 1);
+        // A one-of-a-kind admin tool, not a stick - pin it to Tier S so ItemTierService's
+        // periodic pass doesn't sort it into Tier E with every other plain Stick.
+        this.tiers.forceTier(meta, ItemTier.S);
         item.setItemMeta(meta);
         return item;
     }

@@ -37,10 +37,12 @@ import org.bukkit.plugin.Plugin;
  */
 public final class ItemTierService {
     private final NamespacedKey tierKey;
+    private final NamespacedKey forcedTierKey;
     private final Map<Material, ItemTier> overrides = new EnumMap<>(Material.class);
 
     public ItemTierService(Plugin plugin) {
         this.tierKey = new NamespacedKey(plugin, "item_tier_applied");
+        this.forcedTierKey = new NamespacedKey(plugin, "item_tier_forced");
         var section = plugin.getConfig().getConfigurationSection("item-tiers");
         if (section != null) {
             for (String key : section.getKeys(false)) {
@@ -56,6 +58,30 @@ public final class ItemTierService {
     }
 
     // ----- Tier lookup ----------------------------------------------------
+
+    /**
+     * Pins a specific item (not the whole Material - see {@code item-tiers} in
+     * config.yml for that) to a tier, regardless of what {@link #tierOf} would
+     * otherwise say. For one-off special items built entirely in code (like the
+     * Builder's Wand, a plain Stick that would otherwise fall into Tier E's junk
+     * bucket) - call this on the item's own {@link ItemMeta} while building it,
+     * before it ever reaches {@link #applyItemTiers}.
+     */
+    public void forceTier(ItemMeta meta, ItemTier tier) {
+        meta.getPersistentDataContainer().set(this.forcedTierKey, PersistentDataType.STRING, tier.name());
+    }
+
+    private ItemTier tierOf(ItemMeta meta, Material m) {
+        String forced = meta.getPersistentDataContainer().get(this.forcedTierKey, PersistentDataType.STRING);
+        if (forced != null) {
+            try {
+                return ItemTier.valueOf(forced);
+            } catch (IllegalArgumentException ignored) {
+                // Corrupted/foreign PDC value - fall through to the normal Material-based lookup.
+            }
+        }
+        return this.tierOf(m);
+    }
 
     public ItemTier tierOf(Material m) {
         ItemTier override = this.overrides.get(m);
@@ -207,7 +233,7 @@ public final class ItemTierService {
         if (meta == null || meta.getPersistentDataContainer().has(this.tierKey, PersistentDataType.BYTE)) {
             return null;
         }
-        ItemTier tier = this.tierOf(item.getType());
+        ItemTier tier = this.tierOf(meta, item.getType());
         String kind = kindOf(item.getType());
         String text = kind == null ? tier.label() : tier.label() + " " + kind;
         List<Component> lore = meta.hasLore() ? new ArrayList<>(meta.lore()) : new ArrayList<>();

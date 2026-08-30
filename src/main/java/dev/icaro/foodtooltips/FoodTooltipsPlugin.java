@@ -77,7 +77,7 @@ extends JavaPlugin {
         CombatValorService valor = new CombatValorService((Plugin)this);
         ArmorDefenseService armor = new ArmorDefenseService();
         ItemTierService tiers = new ItemTierService((Plugin)this);
-        BuilderWandService builderWand = new BuilderWandService((Plugin)this);
+        BuilderWandService builderWand = new BuilderWandService((Plugin)this, tiers);
         CombatAbilityService abilities = new CombatAbilityService((Plugin)this, combat, stats, valor);
         stats.abilities(abilities);
         EconomyService economy = new EconomyService((Plugin)this, abilities);
