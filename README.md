@@ -39,16 +39,21 @@ texto/UI. Updates maiores (features novas, mudanças de sistema, como a
 ## Módulos
 
 - `bestiary` — catálogo de mobs e marcos (milestones) de progresso.
+- `builder` — Varinha do Construtor (estende um bloco em linha/coluna).
 - `combat` — listener de combate e visuais de mob (labels/HP acima da cabeça).
+- `destroyer` — Mão do Destruidor (limpa um bloco em linha/coluna, espelho da Varinha).
 - `economy` — saldo de moedas dos jogadores.
 - `food` — tooltips de comida.
 - `global` — nível global, XP, cores de badge/tema.
 - `i18n` — idiomas.
+- `item` — sistema de raridade por Tiers (`ItemTierService`).
 - `mining` — baú do tesouro, gemas, menu de mineração.
 - `protect` — hooks de proteção (WorldGuard / GriefPrevention).
-- `shop` — loja, itens, portais.
 - `skills` — habilidades de combate, mochilas, skills gerais.
 - `stats` — status do jogador e HUD.
+
+O pacote `shop` (loja, itens, portais) foi removido — ver "Loja removida
+(por enquanto)" mais abaixo.
 
 ## Árvore de Habilidades de Combate
 
@@ -348,7 +353,9 @@ só são acessíveis pela tela de Combate (`openCombat`, que já os tinha nos
 slots 39/41); Bestiário continua alcançável também via `/bestiary`. Mochilas,
 Cores do Nível e Loja continuam com botão no menu principal (removê-los
 deixaria Mochilas sem nenhuma forma de acesso, já que não tem comando
-próprio — Loja e Cores do Nível têm `/shop` e `/levelcolor`).
+próprio — Loja e Cores do Nível têm `/shop` e `/levelcolor`). *(A Loja e o
+`/shop` foram removidos numa leva posterior — ver "Loja removida (por
+enquanto)" mais abaixo; o botão dela some junto do menu principal.)*
 
 **Nível Global virou um ícone de skill**: em vez do botão separado que
 tinha, agora fica no slot 13 (centralizado, logo abaixo da cabeça de status),
