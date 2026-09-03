@@ -70,7 +70,7 @@ public final class BuilderWandListener implements Listener {
     public void menuClick(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player p && this.wand.viewingMenu(p)) {
             e.setCancelled(true);
-            this.wand.handleMenuClick(p, e.getRawSlot());
+            this.wand.handleMenuClick(p, e.getRawSlot(), e.getClick());
         }
     }
 

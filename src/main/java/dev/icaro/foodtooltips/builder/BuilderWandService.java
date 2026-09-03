@@ -23,6 +23,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -54,9 +55,11 @@ public final class BuilderWandService {
 
     private static final int MODE_LINE_SLOT = 3;
     private static final int MODE_FACE_SLOT = 5;
+    private static final int RANGE_SLOT = 7;
 
     private final NamespacedKey wandKey;
     private final NamespacedKey modeKey;
+    private final NamespacedKey rangeKey;
     private final int maxLength;
     private final ItemTierService tiers;
     private final Map<UUID, LastAction> lastAction = new HashMap<>();
@@ -65,6 +68,7 @@ public final class BuilderWandService {
     public BuilderWandService(Plugin plugin, ItemTierService tiers) {
         this.wandKey = new NamespacedKey(plugin, "builder_wand");
         this.modeKey = new NamespacedKey(plugin, "builder_wand_mode");
+        this.rangeKey = new NamespacedKey(plugin, "builder_wand_range");
         this.maxLength = Math.max(1, plugin.getConfig().getInt("builder-wand.max-length", 64));
         this.tiers = tiers;
     }
@@ -74,6 +78,7 @@ public final class BuilderWandService {
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(this.wandKey, PersistentDataType.BYTE, (byte) 1);
         meta.getPersistentDataContainer().set(this.modeKey, PersistentDataType.STRING, FillMode.LINE.name());
+        meta.getPersistentDataContainer().set(this.rangeKey, PersistentDataType.INTEGER, this.maxLength);
         // A one-of-a-kind admin tool, not a stick - pin it to Tier S so ItemTierService's
         // periodic pass doesn't sort it into Tier E with every other plain Stick.
         this.tiers.forceTier(meta, ItemTier.S);
@@ -82,7 +87,7 @@ public final class BuilderWandService {
         return item;
     }
 
-    /** Rewrites the wand's name/lore to reflect its current {@link FillMode} - called on creation and whenever the mode changes. */
+    /** Rewrites the wand's name/lore to reflect its current {@link FillMode} and range - called on creation and whenever either setting changes. */
     private void refreshLore(ItemStack item, Language l) {
         ItemMeta meta = item.getItemMeta();
         FillMode mode = this.mode(item);
@@ -91,13 +96,14 @@ public final class BuilderWandService {
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique direito num bloco pra estender", "Right-click a block to extend"), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("na direção da face clicada.", "in the clicked face's direction."), NamedTextColor.GRAY));
-        lore.add(this.line(l.choose("Clique esquerdo abre o menu de modo.", "Left-click opens the mode menu."), NamedTextColor.GRAY));
+        lore.add(this.line(l.choose("Clique esquerdo abre o menu de configurações.", "Left-click opens the settings menu."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Shift + clique esquerdo desfaz a última ação.", "Shift + left-click undoes the last action."), NamedTextColor.GRAY));
         lore.add(Component.empty());
         lore.add(this.line(l.choose("Modo: ", "Mode: ") + (mode == FillMode.LINE
                         ? l.choose("Linha/Coluna", "Line/Column")
                         : l.choose("Face inteira (parede/chão)", "Whole face (wall/floor)")),
                 NamedTextColor.YELLOW));
+        lore.add(this.line(l.choose("Alcance: ", "Range: ") + this.range(item) + l.choose(" blocos", " blocks"), NamedTextColor.YELLOW));
         lore.add(this.line(l.choose("Criativo: não gasta blocos.", "Creative: doesn't use blocks."), NamedTextColor.DARK_GRAY));
         lore.add(this.line(l.choose("Sobrevivência: precisa ter os blocos.", "Survival: needs the blocks."), NamedTextColor.DARK_GRAY));
         meta.lore(lore);
@@ -134,13 +140,45 @@ public final class BuilderWandService {
         }
     }
 
+    /**
+     * The wand's current per-item block limit, clamped to [1, {@code builder-wand.max-length}] -
+     * a player can only ever dial it down from the server's own cap, never past it, even if the
+     * stored value is stale from before an admin lowered the config.
+     */
+    public int range(ItemStack item) {
+        ItemMeta meta = item.getItemMeta();
+        Integer stored = meta == null ? null : meta.getPersistentDataContainer().get(this.rangeKey, PersistentDataType.INTEGER);
+        if (stored == null) {
+            return this.maxLength;
+        }
+        return Math.max(1, Math.min(this.maxLength, stored));
+    }
+
+    /** The selectable range presets shown in the mode menu: powers of two from 8 up to (and always including) the configured max-length. */
+    private List<Integer> rangePresets() {
+        List<Integer> presets = new ArrayList<>();
+        int v = 8;
+        while (v < this.maxLength) {
+            presets.add(v);
+            v *= 2;
+        }
+        presets.add(this.maxLength);
+        return presets;
+    }
+
     // ---- Mode menu ---------------------------------------------------------
 
-    /** Opens the small 1-row menu letting the player pick between {@link FillMode#LINE} and {@link FillMode#FACE} for {@code item} (the wand currently in their hand). */
+    /** Opens the small 1-row settings menu (fill mode + range) for {@code item} (the wand currently in the player's hand). */
     public void openModeMenu(Player p, ItemStack item) {
         Language l = Language.of(p);
-        Inventory v = Bukkit.createInventory(null, 9, l.choose("Varinha: Modo", "Wand: Mode"));
-        ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+        Inventory v = Bukkit.createInventory(null, 9, l.choose("Varinha: Configurações", "Wand: Settings"));
+        this.renderMenu(v, item, l);
+        p.openInventory(v);
+        this.viewingMenu.add(p.getUniqueId());
+    }
+
+    private void renderMenu(Inventory v, ItemStack item, Language l) {
+        ItemStack filler = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta fillerMeta = filler.getItemMeta();
         fillerMeta.displayName(Component.text(" "));
         filler.setItemMeta(fillerMeta);
@@ -150,8 +188,7 @@ public final class BuilderWandService {
         FillMode current = this.mode(item);
         v.setItem(MODE_LINE_SLOT, this.modeOption(FillMode.LINE, current, l));
         v.setItem(MODE_FACE_SLOT, this.modeOption(FillMode.FACE, current, l));
-        p.openInventory(v);
-        this.viewingMenu.add(p.getUniqueId());
+        v.setItem(RANGE_SLOT, this.rangeItem(this.range(item), l));
     }
 
     public boolean viewingMenu(Player p) {
@@ -162,25 +199,46 @@ public final class BuilderWandService {
         this.viewingMenu.remove(p.getUniqueId());
     }
 
-    /** Handles a click inside the mode menu - applies the picked mode to whatever wand {@code p} is currently holding, then closes the menu. */
-    public void handleMenuClick(Player p, int slot) {
+    /**
+     * Handles a click inside the settings menu - applies the picked mode or range step to
+     * whatever wand {@code p} is currently holding, then re-renders the menu in place (it
+     * never auto-closes, so mode and range can both be tweaked in the same session).
+     */
+    public void handleMenuClick(Player p, int slot, ClickType click) {
         ItemStack held = p.getInventory().getItemInMainHand();
         if (!this.isWand(held)) {
             return;
         }
+        Language l = Language.of(p);
         if (slot == MODE_LINE_SLOT) {
-            this.setMode(held, FillMode.LINE, Language.of(p));
+            this.setMode(held, FillMode.LINE, l);
         } else if (slot == MODE_FACE_SLOT) {
-            this.setMode(held, FillMode.FACE, Language.of(p));
+            this.setMode(held, FillMode.FACE, l);
+        } else if (slot == RANGE_SLOT) {
+            this.cycleRange(held, click.isLeftClick(), l);
         } else {
             return;
         }
-        p.closeInventory();
+        this.renderMenu(p.getOpenInventory().getTopInventory(), held, l);
     }
 
     private void setMode(ItemStack item, FillMode mode, Language l) {
         ItemMeta meta = item.getItemMeta();
         meta.getPersistentDataContainer().set(this.modeKey, PersistentDataType.STRING, mode.name());
+        item.setItemMeta(meta);
+        this.refreshLore(item, l);
+    }
+
+    /** Steps the wand's range one preset up ({@code forward}) or down, clamped at the ends of {@link #rangePresets}. */
+    private void cycleRange(ItemStack item, boolean forward, Language l) {
+        List<Integer> presets = this.rangePresets();
+        int index = presets.indexOf(this.range(item));
+        if (index < 0) {
+            index = presets.size() - 1;
+        }
+        int next = forward ? Math.min(presets.size() - 1, index + 1) : Math.max(0, index - 1);
+        ItemMeta meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(this.rangeKey, PersistentDataType.INTEGER, presets.get(next));
         item.setItemMeta(meta);
         this.refreshLore(item, l);
     }
@@ -212,6 +270,22 @@ public final class BuilderWandService {
         return item;
     }
 
+    private ItemStack rangeItem(int current, Language l) {
+        ItemStack item = new ItemStack(Material.SPYGLASS);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(this.line(l.choose("Alcance: ", "Range: ") + current + l.choose(" blocos", " blocks"), NamedTextColor.AQUA)
+                .decoration(TextDecoration.BOLD, true));
+        List<Component> lore = new ArrayList<>();
+        lore.add(this.line(l.choose("Clique esquerdo: aumenta", "Left-click: increase"), NamedTextColor.GRAY));
+        lore.add(this.line(l.choose("Clique direito: diminui", "Right-click: decrease"), NamedTextColor.GRAY));
+        lore.add(Component.empty());
+        lore.add(this.line(l.choose("Máximo do servidor: " + this.maxLength, "Server max: " + this.maxLength), NamedTextColor.DARK_GRAY));
+        meta.lore(lore);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     // ---- Extending ----------------------------------------------------------
 
     /**
@@ -219,7 +293,7 @@ public final class BuilderWandService {
      * {@code face}'s direction), replacing air only, per {@code item}'s current {@link
      * FillMode}: {@link FillMode#LINE} walks a straight line/column; {@link
      * FillMode#FACE} flood-fills the whole connected pocket of air on that plane. Both
-     * stop at the configured max block count, or (Survival only) the moment {@code p}
+     * stop at {@code item}'s own {@link #range}, or (Survival only) the moment {@code p}
      * runs out of that material. Returns how many blocks were actually placed.
      */
     public int extend(Player p, Block clicked, BlockFace face, ItemStack item) {
@@ -229,19 +303,20 @@ public final class BuilderWandService {
         }
         BlockData data = clicked.getBlockData();
         boolean creative = p.getGameMode() == GameMode.CREATIVE;
+        int limit = this.range(item);
         List<Block> placedBlocks = this.mode(item) == FillMode.FACE
-                ? this.extendFace(p, clicked, face, material, data, creative)
-                : this.extendLine(p, clicked, face, material, data, creative);
+                ? this.extendFace(p, clicked, face, material, data, creative, limit)
+                : this.extendLine(p, clicked, face, material, data, creative, limit);
         if (!placedBlocks.isEmpty()) {
             this.lastAction.put(p.getUniqueId(), new LastAction(placedBlocks, material, !creative));
         }
         return placedBlocks.size();
     }
 
-    private List<Block> extendLine(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative) {
+    private List<Block> extendLine(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative, int limit) {
         List<Block> placedBlocks = new ArrayList<>();
         Block cursor = clicked.getRelative(face);
-        for (int i = 0; i < this.maxLength; i++) {
+        for (int i = 0; i < limit; i++) {
             if (!cursor.getType().isAir()) {
                 break;
             }
@@ -255,16 +330,23 @@ public final class BuilderWandService {
         return placedBlocks;
     }
 
-    /** {@link FillMode#FACE} version of {@link #extendLine}: BFS flood-fill across the plane perpendicular to {@code face}, starting one block out from {@code clicked}, filling contiguous air only. */
-    private List<Block> extendFace(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative) {
+    /**
+     * {@link FillMode#FACE} version of {@link #extendLine}: BFS flood-fill across the
+     * plane perpendicular to {@code face}, starting one block out from {@code clicked},
+     * filling contiguous air only. Tracks visited coordinates via {@link Pos} rather
+     * than {@code Block} itself - {@code Block#getRelative} returns a fresh instance
+     * every call, and relying on its {@code equals}/{@code hashCode} for dedup is a
+     * well-known Bukkit footgun; a plain coordinate record sidesteps it entirely.
+     */
+    private List<Block> extendFace(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative, int limit) {
         BlockFace[] axes = planeAxes(face);
         List<Block> placedBlocks = new ArrayList<>();
-        Set<Block> visited = new HashSet<>();
+        Set<Pos> visited = new HashSet<>();
         Deque<Block> queue = new ArrayDeque<>();
         Block start = clicked.getRelative(face);
         queue.add(start);
-        visited.add(start);
-        while (!queue.isEmpty() && placedBlocks.size() < this.maxLength) {
+        visited.add(Pos.of(start));
+        while (!queue.isEmpty() && placedBlocks.size() < limit) {
             Block b = queue.poll();
             if (!b.getType().isAir()) {
                 continue;
@@ -276,12 +358,19 @@ public final class BuilderWandService {
             placedBlocks.add(b);
             for (BlockFace dir : axes) {
                 Block next = b.getRelative(dir);
-                if (visited.add(next)) {
+                if (visited.add(Pos.of(next))) {
                     queue.add(next);
                 }
             }
         }
         return placedBlocks;
+    }
+
+    /** Plain block coordinates, used only as a reliable-by-value HashSet key for flood fills (see {@link #extendFace}). */
+    private record Pos(int x, int y, int z) {
+        static Pos of(Block b) {
+            return new Pos(b.getX(), b.getY(), b.getZ());
+        }
     }
 
     /** The 4 {@link BlockFace}s spanning the plane perpendicular to {@code face} (e.g. UP/DOWN's plane is North/South/East/West - a floor or ceiling). */

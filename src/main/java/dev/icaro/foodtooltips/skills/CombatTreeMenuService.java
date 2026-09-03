@@ -72,8 +72,9 @@ public final class CombatTreeMenuService {
         Language l = Language.of(p);
         Inventory v = Bukkit.createInventory(null, 54, l.choose("Árvore de Combate", "Combat Tree"));
         // Not Material.COAL: locked passive nodes already use that icon (see #stateIcon below),
-        // so a coal filler made every still-locked node vanish into the background.
-        ItemStack filler = this.item(Material.BLACK_STAINED_GLASS_PANE, " ", List.of());
+        // so a coal filler made every still-locked node vanish into the background. Gray glass,
+        // not black, to match the filler convention every other menu in the plugin already uses.
+        ItemStack filler = this.item(Material.GRAY_STAINED_GLASS_PANE, " ", List.of());
         for (int i = 0; i < 54; i++) {
             v.setItem(i, filler);
         }

@@ -69,7 +69,7 @@ public final class DestroyerHandListener implements Listener {
     public void menuClick(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player p && this.hand.viewingMenu(p)) {
             e.setCancelled(true);
-            this.hand.handleMenuClick(p, e.getRawSlot());
+            this.hand.handleMenuClick(p, e.getRawSlot(), e.getClick());
         }
     }
 

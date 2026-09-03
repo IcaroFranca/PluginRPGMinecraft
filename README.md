@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.35.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.36.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -640,3 +640,36 @@ fazia nada, deixando a quebra normal do bloco vazar por baixo do cancelamento
 de evento) agora sempre abre o menu e cancela a interação — fechando de
 quebra uma pequena inconsistência onde seria possível minerar um bloco por
 engano segurando a ferramenta sem querer usá-la.
+
+## Correção do flood-fill (modo Face) e menu ampliado
+
+**Bug corrigido: o modo Face não preenchia/limpava a área direito.** O
+flood-fill guardava os blocos já visitados num `HashSet<Block>` — mas
+`Block#getRelative` devolve uma instância nova a cada chamada, e depender do
+`equals`/`hashCode` dela pra deduplicar é uma pegadinha conhecida da API do
+Bukkit (não é garantido comparar por coordenada em toda versão). Na prática
+isso fazia o algoritmo ficar "quicando" entre um punhado de blocos vizinhos
+sem nunca se espalhar de verdade pela parede/chão. Trocado por um record
+interno `Pos(x, y, z)` como chave do `HashSet` — comparação por valor
+garantida, sem depender de nenhum comportamento específico do `Block`.
+
+**Novo controle de Alcance no menu**: além de Linha/Face, o menu de
+configuração (clique esquerdo) ganhou um terceiro item — uma luneta
+mostrando o alcance atual, clique esquerdo aumenta e clique direito diminui,
+ciclando entre potências de 2 (8, 16, 32...) até o teto configurado em
+`max-length`. Isso fica gravado por item, igual ao modo — cada varinha/mão
+pode ter seu próprio alcance, sem precisar mexer no `config.yml` nem
+reiniciar o servidor. O valor nunca passa do `max-length` do servidor, só
+pra baixo dele.
+
+**O menu não fecha mais sozinho.** Antes, escolher Linha ou Face fechava o
+inventário na hora; agora qualquer clique (modo ou alcance) só atualiza os
+itens do próprio menu, que continua aberto — dá pra ajustar várias
+configurações na mesma sessão sem precisar reabrir o menu a cada mudança.
+Fecha normalmente com ESC ou clicando fora, como qualquer inventário.
+
+**Vidro cinza em vez de preto** nos três menus que usavam
+`BLACK_STAINED_GLASS_PANE` como preenchimento (o menu de configuração da
+Varinha, o da Mão do Destruidor, e a Árvore de Combate) — alinhando com o
+`GRAY_STAINED_GLASS_PANE` que todo o resto dos menus do plugin já usava
+como padrão.
