@@ -31,6 +31,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.util.Vector;
 
 /**
  * The Destroyer's Hand: the Builder's Wand's mirror image. Right-click a placed block
@@ -58,9 +59,10 @@ public final class DestroyerHandService {
     private record LastAction(List<Block> cleared, List<BlockData> data, Material material, boolean gaveItems) {
     }
 
-    private static final int MODE_LINE_SLOT = 3;
-    private static final int MODE_FACE_SLOT = 5;
-    private static final int RANGE_SLOT = 7;
+    // 3-row grid (27 slots); all 3 controls centered on the middle row (9-17).
+    private static final int MODE_LINE_SLOT = 11;
+    private static final int MODE_FACE_SLOT = 13;
+    private static final int RANGE_SLOT = 15;
 
     private final NamespacedKey handKey;
     private final NamespacedKey modeKey;
@@ -99,7 +101,7 @@ public final class DestroyerHandService {
                 .decoration(TextDecoration.BOLD, true));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique direito num bloco pra limpar", "Right-click a block to clear"), NamedTextColor.GRAY));
-        lore.add(this.line(l.choose("na direção da face clicada.", "in the clicked face's direction."), NamedTextColor.GRAY));
+        lore.add(this.line(l.choose("(a direção depende do modo abaixo).", "(direction depends on the mode below)."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Clique esquerdo abre o menu de configurações.", "Left-click opens the settings menu."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Shift + clique esquerdo desfaz a última ação.", "Shift + left-click undoes the last action."), NamedTextColor.GRAY));
         lore.add(Component.empty());
@@ -175,7 +177,7 @@ public final class DestroyerHandService {
     /** Opens the small 1-row settings menu (fill mode + range) for {@code item} (the hand currently in the player's hand). */
     public void openModeMenu(Player p, ItemStack item) {
         Language l = Language.of(p);
-        Inventory v = Bukkit.createInventory(null, 9, l.choose("Mão do Destruidor: Configurações", "Destroyer's Hand: Settings"));
+        Inventory v = Bukkit.createInventory(null, 27, l.choose("Mão do Destruidor: Configurações", "Destroyer's Hand: Settings"));
         this.renderMenu(v, item, l);
         p.openInventory(v);
         this.viewingMenu.add(p.getUniqueId());
@@ -186,7 +188,7 @@ public final class DestroyerHandService {
         ItemMeta fillerMeta = filler.getItemMeta();
         fillerMeta.displayName(Component.text(" "));
         filler.setItemMeta(fillerMeta);
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 27; i++) {
             v.setItem(i, filler);
         }
         FillMode current = this.mode(item);
@@ -259,7 +261,7 @@ public final class DestroyerHandService {
                 .decoration(TextDecoration.BOLD, selected));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(option == FillMode.LINE
-                ? l.choose("Limpa só na direção da face clicada.", "Clears only along the clicked face's direction.")
+                ? l.choose("Topo/base = coluna vertical; lateral = ao longo da parede.", "Top/bottom = vertical column; side = along the wall.")
                 : l.choose("Limpa toda a área conectada da parede ou chão.", "Clears the whole connected area of the wall or floor."), NamedTextColor.GRAY));
         if (selected) {
             lore.add(Component.empty());
@@ -294,9 +296,10 @@ public final class DestroyerHandService {
 
     /**
      * Clears {@code clicked} and, per {@code item}'s current {@link FillMode}, either
-     * every contiguous block of the same Material along {@code face}'s axis ({@link
-     * FillMode#LINE}), or the whole connected pocket of that Material on the plane
-     * perpendicular to {@code face} ({@link FillMode#FACE}). Both stop at {@code
+     * every contiguous block of the same Material along a line ({@link FillMode#LINE} -
+     * vertically for a top/bottom click, or along the wall's own plane for a side click,
+     * see {@link #lineDirection}), or the whole connected pocket of that Material on the
+     * plane perpendicular to {@code face} ({@link FillMode#FACE}). Both stop at {@code
      * item}'s own {@link #range}. Returns how many blocks were actually cleared.
      */
     public int clear(Player p, Block clicked, BlockFace face, ItemStack item) {
@@ -308,7 +311,7 @@ public final class DestroyerHandService {
         int limit = this.range(item);
         ClearResult result = this.mode(item) == FillMode.FACE
                 ? this.clearFace(clicked, face, material, limit)
-                : this.clearLine(clicked, face, material, limit);
+                : this.clearLine(clicked, lineDirection(p, face), material, limit);
         if (!result.cleared().isEmpty()) {
             if (!creative) {
                 this.give(p, material, result.cleared().size());
@@ -319,6 +322,32 @@ public final class DestroyerHandService {
     }
 
     private record ClearResult(List<Block> cleared, List<BlockData> data) {
+    }
+
+    /**
+     * The direction a {@link FillMode#LINE} action actually walks: unchanged ({@code
+     * clickedFace} itself) for a top/bottom click - still a plain vertical column, as
+     * always - but for a side click, extends along the wall's own plane (its face's
+     * horizontal cross-axis) instead of drilling straight through it, picking whichever
+     * of the two candidate directions {@code p} is more turned toward. A 1-block-thick
+     * wall has nothing behind it to drill into, so the old "walk straight out from the
+     * clicked face" convention only ever cleared/placed a single block there.
+     */
+    private static BlockFace lineDirection(Player p, BlockFace clickedFace) {
+        if (clickedFace == BlockFace.UP || clickedFace == BlockFace.DOWN) {
+            return clickedFace;
+        }
+        BlockFace a;
+        BlockFace b;
+        if (clickedFace == BlockFace.EAST || clickedFace == BlockFace.WEST) {
+            a = BlockFace.NORTH;
+            b = BlockFace.SOUTH;
+        } else {
+            a = BlockFace.EAST;
+            b = BlockFace.WEST;
+        }
+        Vector look = p.getLocation().getDirection().setY(0.0);
+        return look.dot(a.getDirection()) >= look.dot(b.getDirection()) ? a : b;
     }
 
     private ClearResult clearLine(Block clicked, BlockFace face, Material material, int limit) {

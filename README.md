@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.36.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.37.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -673,3 +673,58 @@ Fecha normalmente com ESC ou clicando fora, como qualquer inventário.
 Varinha, o da Mão do Destruidor, e a Árvore de Combate) — alinhando com o
 `GRAY_STAINED_GLASS_PANE` que todo o resto dos menus do plugin já usava
 como padrão.
+
+## Menu de configuração: grade de 3 linhas, clique no ar confiável
+
+**Menu ampliado pra 3 linhas (27 slots)**, com os três controles (Linha,
+Face, Alcance) centralizados na linha do meio, em vez do inventário de 1
+linha só de antes.
+
+**Bug corrigido: clique no ar não abria o menu.** O gatilho do menu/desfazer
+usava `PlayerInteractEvent` com `Action.LEFT_CLICK_AIR` — mas esse evento no
+Bukkit é jogado de forma "melhor esforço"/limitada pro caso de clicar no ar
+(diferente do clique num bloco, que é confiável), então nem todo balançar de
+braço sem alvo chegava a disparar o listener. Trocado pelo
+`PlayerAnimationEvent` (o evento de "balançar o braço" puro) como gatilho
+principal — esse dispara em todo clique esquerdo, com ou sem bloco na mira,
+sem exceção. O `PlayerInteractEvent` continua sendo usado, mas só pra
+cancelar a quebra do bloco quando o clique acontece em cima de um (a
+ação de desfazer/abrir menu em si já rodou pelo evento de animação).
+
+## Modo Face da Varinha corrigido: agora copia a parede existente
+
+**Bug corrigido: o modo Face inundava o ar aberto sem limite natural.**
+Antes, `extendFace` fazia flood-fill direto na camada de AR a ser
+preenchida — mas ar sem nada atrás não tem beirada natural pra parar, então
+clicar num bloco isolado (sem parede real por trás) fazia o preenchimento
+crescer feito um losango (o formato clássico de flood-fill BFS em espaço
+aberto) até bater no limite de Alcance, sem guardar nenhuma relação com uma
+parede de verdade.
+
+A correção muda a ordem das coisas: primeiro `extendFace` rastreia a forma
+**real** da parede/chão existente (flood-fill pelo mesmo `Material` do
+bloco clicado, contíguo — o mesmo algoritmo que `DestroyerHandService`
+já usa pra decidir o que limpar), *depois* pinta uma cópia dessa forma na
+camada imediatamente além dela, só onde tiver ar. Isso naturalmente limita
+o preenchimento ao tamanho real da parede (que sempre tem uma borda física
+concreta), em vez de inundar o vazio sem nenhuma referência.
+
+## Modo Linha: lateral agora anda ao longo da parede, não mais atravessa ela
+
+**Bug corrigido: clicar numa face lateral só limpava/estendia 1 bloco.** A
+direção do modo Linha sempre foi literalmente a face clicada (clicar na
+face leste = anda pra leste) — o que faz sentido pra construir uma coluna
+vertical (clicar topo/base) ou uma linha "pra fora" de um ponto isolado
+(um pilar, uma ponte), mas numa parede plana de 1 bloco de espessura, andar
+"pra fora" da face lateral significa furar através da parede — e como ela
+só tem 1 bloco de espessura, a linha para imediatamente depois desse único
+bloco (o próximo já é ar, ou outro material).
+
+Agora, clicar numa face lateral (não topo/base) faz o modo Linha andar **ao
+longo do plano da própria parede** em vez de furar por ela —
+`BuilderWandService#lineDirection`/`DestroyerHandService#lineDirection`
+escolhem entre as duas direções possíveis nesse plano (ex.: Norte ou Sul,
+pra uma parede virada Leste/Oeste) com base em qual delas o jogador está
+mais virado, usando produto escalar entre a direção do olhar e o vetor de
+cada `BlockFace` candidata. Clicar topo/base continua sem mudança — ainda
+uma coluna vertical simples, na direção óbvia da própria face.

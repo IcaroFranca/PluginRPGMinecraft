@@ -31,6 +31,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.util.Vector;
 
 /**
  * The Builder's Wand: right-click a placed block to extend it into a full line
@@ -53,9 +54,10 @@ public final class BuilderWandService {
     private record LastAction(List<Block> placed, Material material, boolean consumed) {
     }
 
-    private static final int MODE_LINE_SLOT = 3;
-    private static final int MODE_FACE_SLOT = 5;
-    private static final int RANGE_SLOT = 7;
+    // 3-row grid (27 slots); all 3 controls centered on the middle row (9-17).
+    private static final int MODE_LINE_SLOT = 11;
+    private static final int MODE_FACE_SLOT = 13;
+    private static final int RANGE_SLOT = 15;
 
     private final NamespacedKey wandKey;
     private final NamespacedKey modeKey;
@@ -95,7 +97,7 @@ public final class BuilderWandService {
                 .decoration(TextDecoration.BOLD, true));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique direito num bloco pra estender", "Right-click a block to extend"), NamedTextColor.GRAY));
-        lore.add(this.line(l.choose("na direção da face clicada.", "in the clicked face's direction."), NamedTextColor.GRAY));
+        lore.add(this.line(l.choose("(a direção depende do modo abaixo).", "(direction depends on the mode below)."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Clique esquerdo abre o menu de configurações.", "Left-click opens the settings menu."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Shift + clique esquerdo desfaz a última ação.", "Shift + left-click undoes the last action."), NamedTextColor.GRAY));
         lore.add(Component.empty());
@@ -171,7 +173,7 @@ public final class BuilderWandService {
     /** Opens the small 1-row settings menu (fill mode + range) for {@code item} (the wand currently in the player's hand). */
     public void openModeMenu(Player p, ItemStack item) {
         Language l = Language.of(p);
-        Inventory v = Bukkit.createInventory(null, 9, l.choose("Varinha: Configurações", "Wand: Settings"));
+        Inventory v = Bukkit.createInventory(null, 27, l.choose("Varinha: Configurações", "Wand: Settings"));
         this.renderMenu(v, item, l);
         p.openInventory(v);
         this.viewingMenu.add(p.getUniqueId());
@@ -182,7 +184,7 @@ public final class BuilderWandService {
         ItemMeta fillerMeta = filler.getItemMeta();
         fillerMeta.displayName(Component.text(" "));
         filler.setItemMeta(fillerMeta);
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 27; i++) {
             v.setItem(i, filler);
         }
         FillMode current = this.mode(item);
@@ -255,8 +257,8 @@ public final class BuilderWandService {
                 .decoration(TextDecoration.BOLD, selected));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(option == FillMode.LINE
-                ? l.choose("Estende/limpa só na direção da face clicada.", "Extends/clears only along the clicked face's direction.")
-                : l.choose("Preenche/limpa toda a área conectada da parede ou chão.", "Fills/clears the whole connected area of the wall or floor."), NamedTextColor.GRAY));
+                ? l.choose("Topo/base = coluna vertical; lateral = ao longo da parede.", "Top/bottom = vertical column; side = along the wall.")
+                : l.choose("Copia a parede/chão existente pra camada de fora.", "Copies the existing wall/floor onto the layer beyond it."), NamedTextColor.GRAY));
         if (selected) {
             lore.add(Component.empty());
             lore.add(this.line(l.choose("Modo atual", "Current mode"), NamedTextColor.GREEN));
@@ -289,12 +291,15 @@ public final class BuilderWandService {
     // ---- Extending ----------------------------------------------------------
 
     /**
-     * Extends {@code clicked}'s block starting from the block adjacent to it (in
-     * {@code face}'s direction), replacing air only, per {@code item}'s current {@link
-     * FillMode}: {@link FillMode#LINE} walks a straight line/column; {@link
-     * FillMode#FACE} flood-fills the whole connected pocket of air on that plane. Both
-     * stop at {@code item}'s own {@link #range}, or (Survival only) the moment {@code p}
-     * runs out of that material. Returns how many blocks were actually placed.
+     * Extends {@code clicked}'s block, replacing air only, per {@code item}'s current
+     * {@link FillMode}: {@link FillMode#LINE} walks a straight line starting from the
+     * block adjacent to {@code clicked} - vertically (in {@code face}'s own direction)
+     * for a top/bottom click, or horizontally along the wall's own plane (see {@link
+     * #lineDirection}) for a side click; {@link FillMode#FACE} traces the whole existing
+     * wall/floor {@code clicked} belongs to and paints a matching new layer one block
+     * further out (see {@link #extendFace}). Both stop at {@code item}'s own {@link
+     * #range}, or (Survival only) the moment {@code p} runs out of that material.
+     * Returns how many blocks were actually placed.
      */
     public int extend(Player p, Block clicked, BlockFace face, ItemStack item) {
         Material material = clicked.getType();
@@ -306,11 +311,37 @@ public final class BuilderWandService {
         int limit = this.range(item);
         List<Block> placedBlocks = this.mode(item) == FillMode.FACE
                 ? this.extendFace(p, clicked, face, material, data, creative, limit)
-                : this.extendLine(p, clicked, face, material, data, creative, limit);
+                : this.extendLine(p, clicked, lineDirection(p, face), material, data, creative, limit);
         if (!placedBlocks.isEmpty()) {
             this.lastAction.put(p.getUniqueId(), new LastAction(placedBlocks, material, !creative));
         }
         return placedBlocks.size();
+    }
+
+    /**
+     * The direction a {@link FillMode#LINE} action actually walks: unchanged ({@code
+     * clickedFace} itself) for a top/bottom click - still a plain vertical column, as
+     * always - but for a side click, extends along the wall's own plane (its face's
+     * horizontal cross-axis) instead of drilling straight through it, picking whichever
+     * of the two candidate directions {@code p} is more turned toward. A 1-block-thick
+     * wall has nothing behind it to drill into, so the old "walk straight out from the
+     * clicked face" convention only ever cleared/placed a single block there.
+     */
+    private static BlockFace lineDirection(Player p, BlockFace clickedFace) {
+        if (clickedFace == BlockFace.UP || clickedFace == BlockFace.DOWN) {
+            return clickedFace;
+        }
+        BlockFace a;
+        BlockFace b;
+        if (clickedFace == BlockFace.EAST || clickedFace == BlockFace.WEST) {
+            a = BlockFace.NORTH;
+            b = BlockFace.SOUTH;
+        } else {
+            a = BlockFace.EAST;
+            b = BlockFace.WEST;
+        }
+        Vector look = p.getLocation().getDirection().setY(0.0);
+        return look.dot(a.getDirection()) >= look.dot(b.getDirection()) ? a : b;
     }
 
     private List<Block> extendLine(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative, int limit) {
@@ -331,37 +362,49 @@ public final class BuilderWandService {
     }
 
     /**
-     * {@link FillMode#FACE} version of {@link #extendLine}: BFS flood-fill across the
-     * plane perpendicular to {@code face}, starting one block out from {@code clicked},
-     * filling contiguous air only. Tracks visited coordinates via {@link Pos} rather
-     * than {@code Block} itself - {@code Block#getRelative} returns a fresh instance
-     * every call, and relying on its {@code equals}/{@code hashCode} for dedup is a
-     * well-known Bukkit footgun; a plain coordinate record sidesteps it entirely.
+     * {@link FillMode#FACE} version of {@link #extendLine}: first traces the real,
+     * existing shape of the wall/floor {@code clicked} belongs to - a BFS flood-fill
+     * across the plane perpendicular to {@code face}, through contiguous blocks of the
+     * same Material as {@code clicked} (same algorithm {@link
+     * dev.icaro.foodtooltips.destroyer.DestroyerHandService#clear} uses to find what to
+     * clear) - then paints a matching new layer one block further out along {@code
+     * face}, wherever that's still air. Tracing the existing structure first, instead of
+     * flood-filling the target air layer directly, is what keeps this bounded by the
+     * wall's own real footprint: air with nothing behind it has no natural edge to stop
+     * at, so filling it directly would just balloon outward in every direction until it
+     * hit {@code limit}, regardless of any actual wall shape.
      */
     private List<Block> extendFace(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative, int limit) {
         BlockFace[] axes = planeAxes(face);
-        List<Block> placedBlocks = new ArrayList<>();
+        List<Block> wallBlocks = new ArrayList<>();
         Set<Pos> visited = new HashSet<>();
         Deque<Block> queue = new ArrayDeque<>();
-        Block start = clicked.getRelative(face);
-        queue.add(start);
-        visited.add(Pos.of(start));
-        while (!queue.isEmpty() && placedBlocks.size() < limit) {
+        queue.add(clicked);
+        visited.add(Pos.of(clicked));
+        while (!queue.isEmpty() && wallBlocks.size() < limit) {
             Block b = queue.poll();
-            if (!b.getType().isAir()) {
+            if (b.getType() != material) {
                 continue;
             }
-            if (!creative && !this.consume(p, material)) {
-                break;
-            }
-            b.setBlockData(data);
-            placedBlocks.add(b);
+            wallBlocks.add(b);
             for (BlockFace dir : axes) {
                 Block next = b.getRelative(dir);
                 if (visited.add(Pos.of(next))) {
                     queue.add(next);
                 }
             }
+        }
+        List<Block> placedBlocks = new ArrayList<>();
+        for (Block wallBlock : wallBlocks) {
+            Block target = wallBlock.getRelative(face);
+            if (!target.getType().isAir()) {
+                continue;
+            }
+            if (!creative && !this.consume(p, material)) {
+                break;
+            }
+            target.setBlockData(data);
+            placedBlocks.add(target);
         }
         return placedBlocks;
     }
