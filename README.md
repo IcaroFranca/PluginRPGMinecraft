@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.37.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.38.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -709,22 +709,55 @@ camada imediatamente além dela, só onde tiver ar. Isso naturalmente limita
 o preenchimento ao tamanho real da parede (que sempre tem uma borda física
 concreta), em vez de inundar o vazio sem nenhuma referência.
 
-## Modo Linha: lateral agora anda ao longo da parede, não mais atravessa ela
+## Modo Linha: Mão do Destruidor anda ao longo da parede, Varinha continua na direção da face
 
-**Bug corrigido: clicar numa face lateral só limpava/estendia 1 bloco.** A
-direção do modo Linha sempre foi literalmente a face clicada (clicar na
-face leste = anda pra leste) — o que faz sentido pra construir uma coluna
-vertical (clicar topo/base) ou uma linha "pra fora" de um ponto isolado
-(um pilar, uma ponte), mas numa parede plana de 1 bloco de espessura, andar
-"pra fora" da face lateral significa furar através da parede — e como ela
-só tem 1 bloco de espessura, a linha para imediatamente depois desse único
-bloco (o próximo já é ar, ou outro material).
+**Bug corrigido (só na Mão do Destruidor): clicar numa face lateral só
+limpava 1 bloco.** A direção do modo Linha sempre foi literalmente a face
+clicada (clicar na face leste = anda pra leste) — o que faz sentido pra uma
+coluna vertical (clicar topo/base) ou uma linha "pra fora" de um ponto
+isolado (um pilar, uma ponte), mas numa parede plana de 1 bloco de
+espessura, andar "pra fora" da face lateral significa furar através dela —
+e como ela só tem 1 bloco de espessura, a linha parava imediatamente depois
+desse único bloco.
 
-Agora, clicar numa face lateral (não topo/base) faz o modo Linha andar **ao
-longo do plano da própria parede** em vez de furar por ela —
-`BuilderWandService#lineDirection`/`DestroyerHandService#lineDirection`
-escolhem entre as duas direções possíveis nesse plano (ex.: Norte ou Sul,
-pra uma parede virada Leste/Oeste) com base em qual delas o jogador está
-mais virado, usando produto escalar entre a direção do olhar e o vetor de
-cada `BlockFace` candidata. Clicar topo/base continua sem mudança — ainda
-uma coluna vertical simples, na direção óbvia da própria face.
+Pra Mão do Destruidor, clicar numa face lateral (não topo/base) agora faz o
+modo Linha andar **ao longo do plano da própria parede** em vez de furar por
+ela. `DestroyerHandService#lineDirection` escolhe entre as duas direções
+possíveis nesse plano (ex.: Norte ou Sul, pra uma parede virada
+Leste/Oeste) checando qual delas **continua de verdade com o mesmo
+`Material`** do bloco clicado — é limpeza, então dá pra olhar o estado real
+do mundo em vez de adivinhar. Só cai pro critério de produto escalar entre a
+direção do olhar do jogador e o vetor de cada `BlockFace` candidata quando
+isso é ambíguo (as duas direções continuam com o mesmo material, ex.: no
+meio de uma parede comprida) ou indiferente (nenhuma das duas continua,
+ex.: um bloco isolado — a limpeza só alcançaria 1 bloco de qualquer jeito).
+Clicar topo/base continua sem mudança — ainda uma coluna vertical simples.
+
+**A Varinha do Construtor não ganhou essa mudança.** Uma primeira versão
+aplicou o mesmo critério (olhar + produto escalar) simetricamente às duas
+ferramentas, mas pra construir isso não faz sentido: o modo Linha da Varinha
+estende pra dentro do **ar**, então não existe "material real que continua"
+pra checar — só o palpite do olhar, que adivinhava errado com frequência e
+fazia a Varinha construir pro lado errado do bloco clicado. A Varinha
+manteve (voltou a) o comportamento original: o modo Linha sempre estende
+literalmente na direção da face clicada, sem heurística nenhuma. As duas
+ferramentas resolvem o mesmo problema de formas diferentes porque uma
+enxerga o mundo real (limpar) e a outra não (construir no vazio).
+
+## Novo preset de Alcance: Ilimitado
+
+O menu de Alcance ganhou uma última opção acima do teto configurado em
+`max-length` (padrão 64): **Ilimitado** (ícone de olho de ender, com um
+aviso em vermelho no lore). Ela pula o clamp normal de `[1, max-length]` —
+é a única forma de passar do teto do servidor sem editar o `config.yml`.
+Continua sendo uma ferramenta administrativa (permissão `foodtooltips.admin`
+nos comandos `/builderwand` e `/destroyerhand`), então é um opt-in
+deliberado, não um buraco de segurança.
+
+Internamente `UNLIMITED` não é literalmente infinito (`Integer.MAX_VALUE`
+teria um risco real de travar a thread do servidor: o modo Linha da Varinha
+só para ao encontrar um bloco não-ar, então apontar pro céu aberto em modo
+Criativo giraria o loop até estourar o limite de verdade) — é um número
+grande porém finito (10.000 blocos), generoso o bastante pra qualquer
+construção/limpeza real continuar parecendo ilimitada na prática, mas
+seguro contra esse caso extremo.

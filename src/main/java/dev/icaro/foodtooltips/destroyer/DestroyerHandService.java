@@ -109,7 +109,7 @@ public final class DestroyerHandService {
                         ? l.choose("Linha/Coluna", "Line/Column")
                         : l.choose("Face inteira (parede/chão)", "Whole face (wall/floor)")),
                 NamedTextColor.YELLOW));
-        lore.add(this.line(l.choose("Alcance: ", "Range: ") + this.range(item) + l.choose(" blocos", " blocks"), NamedTextColor.YELLOW));
+        lore.add(this.line(l.choose("Alcance: ", "Range: ") + this.rangeLabel(this.range(item), l), NamedTextColor.YELLOW));
         lore.add(this.line(l.choose("Criativo: não devolve nada.", "Creative: doesn't give anything back."), NamedTextColor.DARK_GRAY));
         lore.add(this.line(l.choose("Sobrevivência: devolve os blocos.", "Survival: gives the blocks back."), NamedTextColor.DARK_GRAY));
         meta.lore(lore);
@@ -147,9 +147,22 @@ public final class DestroyerHandService {
     }
 
     /**
-     * The hand's current per-item block limit, clamped to [1, {@code destroyer-hand.max-length}] -
-     * a player can only ever dial it down from the server's own cap, never past it, even if the
-     * stored value is stale from before an admin lowered the config.
+     * Sentinel {@link #range} value meaning "no cap at all" - the top preset in {@link
+     * #rangePresets}, past the server's own max-length. Admin-only tool, so this is a deliberate
+     * opt-in, not a safety hole. Deliberately a large finite number rather than {@code
+     * Integer.MAX_VALUE} (mirrors {@link dev.icaro.foodtooltips.builder.BuilderWandService#UNLIMITED}):
+     * a natural formation of contiguous same-Material blocks (a stone mountain, an ocean floor)
+     * can run for a very long way, and true unbounded would spin the server thread clearing it
+     * instead of just stopping at a still-generous limit. 10,000 blocks is effectively unlimited
+     * for any real clear.
+     */
+    public static final int UNLIMITED = 10_000;
+
+    /**
+     * The hand's current per-item block limit: {@link #UNLIMITED} if that's what's picked in
+     * the menu, otherwise clamped to [1, {@code destroyer-hand.max-length}] - a player can only
+     * ever dial it down from the server's own cap (or explicitly opt out via Unlimited), never
+     * accidentally end up past it from a stale stored value after an admin lowers the config.
      */
     public int range(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
@@ -157,10 +170,13 @@ public final class DestroyerHandService {
         if (stored == null) {
             return this.maxLength;
         }
+        if (stored == UNLIMITED) {
+            return UNLIMITED;
+        }
         return Math.max(1, Math.min(this.maxLength, stored));
     }
 
-    /** The selectable range presets shown in the mode menu: powers of two from 8 up to (and always including) the configured max-length. */
+    /** The selectable range presets shown in the mode menu: powers of two from 8 up to the configured max-length, plus {@link #UNLIMITED} as the last, top option. */
     private List<Integer> rangePresets() {
         List<Integer> presets = new ArrayList<>();
         int v = 8;
@@ -169,6 +185,7 @@ public final class DestroyerHandService {
             v *= 2;
         }
         presets.add(this.maxLength);
+        presets.add(UNLIMITED);
         return presets;
     }
 
@@ -276,16 +293,24 @@ public final class DestroyerHandService {
         return item;
     }
 
+    /** {@code current} as shown to the player - the plain number, or "Ilimitado"/"Unlimited" for {@link #UNLIMITED}. */
+    private String rangeLabel(int current, Language l) {
+        return current == UNLIMITED ? l.choose("Ilimitado", "Unlimited") : current + l.choose(" blocos", " blocks");
+    }
+
     private ItemStack rangeItem(int current, Language l) {
-        ItemStack item = new ItemStack(Material.SPYGLASS);
+        ItemStack item = new ItemStack(current == UNLIMITED ? Material.ENDER_EYE : Material.SPYGLASS);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(this.line(l.choose("Alcance: ", "Range: ") + current + l.choose(" blocos", " blocks"), NamedTextColor.AQUA)
+        meta.displayName(this.line(l.choose("Alcance: ", "Range: ") + this.rangeLabel(current, l), NamedTextColor.AQUA)
                 .decoration(TextDecoration.BOLD, true));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique esquerdo: aumenta", "Left-click: increase"), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Clique direito: diminui", "Right-click: decrease"), NamedTextColor.GRAY));
         lore.add(Component.empty());
         lore.add(this.line(l.choose("Máximo do servidor: " + this.maxLength, "Server max: " + this.maxLength), NamedTextColor.DARK_GRAY));
+        if (current == UNLIMITED) {
+            lore.add(this.line(l.choose("Sem teto - cuidado em áreas muito grandes.", "No cap - be careful in very large areas."), NamedTextColor.RED));
+        }
         meta.lore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
         item.setItemMeta(meta);
@@ -311,7 +336,7 @@ public final class DestroyerHandService {
         int limit = this.range(item);
         ClearResult result = this.mode(item) == FillMode.FACE
                 ? this.clearFace(clicked, face, material, limit)
-                : this.clearLine(clicked, lineDirection(p, face), material, limit);
+                : this.clearLine(clicked, lineDirection(p, clicked, face, material), material, limit);
         if (!result.cleared().isEmpty()) {
             if (!creative) {
                 this.give(p, material, result.cleared().size());
@@ -325,15 +350,20 @@ public final class DestroyerHandService {
     }
 
     /**
-     * The direction a {@link FillMode#LINE} action actually walks: unchanged ({@code
+     * The direction a {@link FillMode#LINE} clear actually walks: unchanged ({@code
      * clickedFace} itself) for a top/bottom click - still a plain vertical column, as
-     * always - but for a side click, extends along the wall's own plane (its face's
-     * horizontal cross-axis) instead of drilling straight through it, picking whichever
-     * of the two candidate directions {@code p} is more turned toward. A 1-block-thick
+     * always - but for a side click, clears along the wall's own plane (its face's
+     * horizontal cross-axis) instead of drilling straight through it. A 1-block-thick
      * wall has nothing behind it to drill into, so the old "walk straight out from the
-     * clicked face" convention only ever cleared/placed a single block there.
+     * clicked face" convention only ever cleared a single block there.
+     *
+     * <p>Between the two in-plane candidates, whichever one actually continues with the
+     * same Material wins - that's the real wall, not a guess. Only falls back to picking
+     * whichever direction {@code p} is more turned toward when that's ambiguous (both
+     * candidates match, e.g. clicked in the middle of a long wall) or moot (neither does,
+     * e.g. a single isolated block - the clear only ever reaches 1 block either way).
      */
-    private static BlockFace lineDirection(Player p, BlockFace clickedFace) {
+    private static BlockFace lineDirection(Player p, Block clicked, BlockFace clickedFace, Material material) {
         if (clickedFace == BlockFace.UP || clickedFace == BlockFace.DOWN) {
             return clickedFace;
         }
@@ -345,6 +375,11 @@ public final class DestroyerHandService {
         } else {
             a = BlockFace.EAST;
             b = BlockFace.WEST;
+        }
+        boolean aMatches = clicked.getRelative(a).getType() == material;
+        boolean bMatches = clicked.getRelative(b).getType() == material;
+        if (aMatches != bMatches) {
+            return aMatches ? a : b;
         }
         Vector look = p.getLocation().getDirection().setY(0.0);
         return look.dot(a.getDirection()) >= look.dot(b.getDirection()) ? a : b;

@@ -31,7 +31,6 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.util.Vector;
 
 /**
  * The Builder's Wand: right-click a placed block to extend it into a full line
@@ -97,7 +96,7 @@ public final class BuilderWandService {
                 .decoration(TextDecoration.BOLD, true));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique direito num bloco pra estender", "Right-click a block to extend"), NamedTextColor.GRAY));
-        lore.add(this.line(l.choose("(a direção depende do modo abaixo).", "(direction depends on the mode below)."), NamedTextColor.GRAY));
+        lore.add(this.line(l.choose("na direção da face clicada.", "in the clicked face's direction."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Clique esquerdo abre o menu de configurações.", "Left-click opens the settings menu."), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Shift + clique esquerdo desfaz a última ação.", "Shift + left-click undoes the last action."), NamedTextColor.GRAY));
         lore.add(Component.empty());
@@ -105,7 +104,7 @@ public final class BuilderWandService {
                         ? l.choose("Linha/Coluna", "Line/Column")
                         : l.choose("Face inteira (parede/chão)", "Whole face (wall/floor)")),
                 NamedTextColor.YELLOW));
-        lore.add(this.line(l.choose("Alcance: ", "Range: ") + this.range(item) + l.choose(" blocos", " blocks"), NamedTextColor.YELLOW));
+        lore.add(this.line(l.choose("Alcance: ", "Range: ") + this.rangeLabel(this.range(item), l), NamedTextColor.YELLOW));
         lore.add(this.line(l.choose("Criativo: não gasta blocos.", "Creative: doesn't use blocks."), NamedTextColor.DARK_GRAY));
         lore.add(this.line(l.choose("Sobrevivência: precisa ter os blocos.", "Survival: needs the blocks."), NamedTextColor.DARK_GRAY));
         meta.lore(lore);
@@ -143,9 +142,21 @@ public final class BuilderWandService {
     }
 
     /**
-     * The wand's current per-item block limit, clamped to [1, {@code builder-wand.max-length}] -
-     * a player can only ever dial it down from the server's own cap, never past it, even if the
-     * stored value is stale from before an admin lowered the config.
+     * Sentinel {@link #range} value meaning "no cap at all" - the top preset in {@link
+     * #rangePresets}, past the server's own max-length. Admin-only tool, so this is a deliberate
+     * opt-in, not a safety hole. Deliberately a large finite number rather than {@code
+     * Integer.MAX_VALUE}: {@link #extendLine} only stops on a non-air block, so in creative mode
+     * pointed at open sky there's nothing to make it stop short of the loop bound itself - true
+     * unbounded would spin the server thread for a very long time instead of just failing fast.
+     * 10,000 blocks in a straight line is effectively unlimited for any real build.
+     */
+    public static final int UNLIMITED = 10_000;
+
+    /**
+     * The wand's current per-item block limit: {@link #UNLIMITED} if that's what's picked in
+     * the menu, otherwise clamped to [1, {@code builder-wand.max-length}] - a player can only
+     * ever dial it down from the server's own cap (or explicitly opt out via Unlimited), never
+     * accidentally end up past it from a stale stored value after an admin lowers the config.
      */
     public int range(ItemStack item) {
         ItemMeta meta = item.getItemMeta();
@@ -153,10 +164,13 @@ public final class BuilderWandService {
         if (stored == null) {
             return this.maxLength;
         }
+        if (stored == UNLIMITED) {
+            return UNLIMITED;
+        }
         return Math.max(1, Math.min(this.maxLength, stored));
     }
 
-    /** The selectable range presets shown in the mode menu: powers of two from 8 up to (and always including) the configured max-length. */
+    /** The selectable range presets shown in the mode menu: powers of two from 8 up to the configured max-length, plus {@link #UNLIMITED} as the last, top option. */
     private List<Integer> rangePresets() {
         List<Integer> presets = new ArrayList<>();
         int v = 8;
@@ -165,6 +179,7 @@ public final class BuilderWandService {
             v *= 2;
         }
         presets.add(this.maxLength);
+        presets.add(UNLIMITED);
         return presets;
     }
 
@@ -257,7 +272,7 @@ public final class BuilderWandService {
                 .decoration(TextDecoration.BOLD, selected));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(option == FillMode.LINE
-                ? l.choose("Topo/base = coluna vertical; lateral = ao longo da parede.", "Top/bottom = vertical column; side = along the wall.")
+                ? l.choose("Estende só na direção da face clicada.", "Extends only along the clicked face's direction.")
                 : l.choose("Copia a parede/chão existente pra camada de fora.", "Copies the existing wall/floor onto the layer beyond it."), NamedTextColor.GRAY));
         if (selected) {
             lore.add(Component.empty());
@@ -272,16 +287,24 @@ public final class BuilderWandService {
         return item;
     }
 
+    /** {@code current} as shown to the player - the plain number, or "Ilimitado"/"Unlimited" for {@link #UNLIMITED}. */
+    private String rangeLabel(int current, Language l) {
+        return current == UNLIMITED ? l.choose("Ilimitado", "Unlimited") : current + l.choose(" blocos", " blocks");
+    }
+
     private ItemStack rangeItem(int current, Language l) {
-        ItemStack item = new ItemStack(Material.SPYGLASS);
+        ItemStack item = new ItemStack(current == UNLIMITED ? Material.ENDER_EYE : Material.SPYGLASS);
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(this.line(l.choose("Alcance: ", "Range: ") + current + l.choose(" blocos", " blocks"), NamedTextColor.AQUA)
+        meta.displayName(this.line(l.choose("Alcance: ", "Range: ") + this.rangeLabel(current, l), NamedTextColor.AQUA)
                 .decoration(TextDecoration.BOLD, true));
         List<Component> lore = new ArrayList<>();
         lore.add(this.line(l.choose("Clique esquerdo: aumenta", "Left-click: increase"), NamedTextColor.GRAY));
         lore.add(this.line(l.choose("Clique direito: diminui", "Right-click: decrease"), NamedTextColor.GRAY));
         lore.add(Component.empty());
         lore.add(this.line(l.choose("Máximo do servidor: " + this.maxLength, "Server max: " + this.maxLength), NamedTextColor.DARK_GRAY));
+        if (current == UNLIMITED) {
+            lore.add(this.line(l.choose("Sem teto - cuidado em áreas muito grandes.", "No cap - be careful in very large areas."), NamedTextColor.RED));
+        }
         meta.lore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
         item.setItemMeta(meta);
@@ -291,15 +314,13 @@ public final class BuilderWandService {
     // ---- Extending ----------------------------------------------------------
 
     /**
-     * Extends {@code clicked}'s block, replacing air only, per {@code item}'s current
-     * {@link FillMode}: {@link FillMode#LINE} walks a straight line starting from the
-     * block adjacent to {@code clicked} - vertically (in {@code face}'s own direction)
-     * for a top/bottom click, or horizontally along the wall's own plane (see {@link
-     * #lineDirection}) for a side click; {@link FillMode#FACE} traces the whole existing
-     * wall/floor {@code clicked} belongs to and paints a matching new layer one block
-     * further out (see {@link #extendFace}). Both stop at {@code item}'s own {@link
-     * #range}, or (Survival only) the moment {@code p} runs out of that material.
-     * Returns how many blocks were actually placed.
+     * Extends {@code clicked}'s block starting from the block adjacent to it (in
+     * {@code face}'s direction), replacing air only, per {@code item}'s current {@link
+     * FillMode}: {@link FillMode#LINE} walks a straight line/column; {@link
+     * FillMode#FACE} traces the whole existing wall/floor {@code clicked} belongs to and
+     * paints a matching new layer one block further out (see {@link #extendFace}). Both
+     * stop at {@code item}'s own {@link #range}, or (Survival only) the moment {@code p}
+     * runs out of that material. Returns how many blocks were actually placed.
      */
     public int extend(Player p, Block clicked, BlockFace face, ItemStack item) {
         Material material = clicked.getType();
@@ -311,37 +332,11 @@ public final class BuilderWandService {
         int limit = this.range(item);
         List<Block> placedBlocks = this.mode(item) == FillMode.FACE
                 ? this.extendFace(p, clicked, face, material, data, creative, limit)
-                : this.extendLine(p, clicked, lineDirection(p, face), material, data, creative, limit);
+                : this.extendLine(p, clicked, face, material, data, creative, limit);
         if (!placedBlocks.isEmpty()) {
             this.lastAction.put(p.getUniqueId(), new LastAction(placedBlocks, material, !creative));
         }
         return placedBlocks.size();
-    }
-
-    /**
-     * The direction a {@link FillMode#LINE} action actually walks: unchanged ({@code
-     * clickedFace} itself) for a top/bottom click - still a plain vertical column, as
-     * always - but for a side click, extends along the wall's own plane (its face's
-     * horizontal cross-axis) instead of drilling straight through it, picking whichever
-     * of the two candidate directions {@code p} is more turned toward. A 1-block-thick
-     * wall has nothing behind it to drill into, so the old "walk straight out from the
-     * clicked face" convention only ever cleared/placed a single block there.
-     */
-    private static BlockFace lineDirection(Player p, BlockFace clickedFace) {
-        if (clickedFace == BlockFace.UP || clickedFace == BlockFace.DOWN) {
-            return clickedFace;
-        }
-        BlockFace a;
-        BlockFace b;
-        if (clickedFace == BlockFace.EAST || clickedFace == BlockFace.WEST) {
-            a = BlockFace.NORTH;
-            b = BlockFace.SOUTH;
-        } else {
-            a = BlockFace.EAST;
-            b = BlockFace.WEST;
-        }
-        Vector look = p.getLocation().getDirection().setY(0.0);
-        return look.dot(a.getDirection()) >= look.dot(b.getDirection()) ? a : b;
     }
 
     private List<Block> extendLine(Player p, Block clicked, BlockFace face, Material material, BlockData data, boolean creative, int limit) {
