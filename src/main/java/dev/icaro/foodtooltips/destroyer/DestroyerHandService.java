@@ -149,14 +149,16 @@ public final class DestroyerHandService {
     /**
      * Sentinel {@link #range} value meaning "no cap at all" - the top preset in {@link
      * #rangePresets}, past the server's own max-length. Admin-only tool, so this is a deliberate
-     * opt-in, not a safety hole. Deliberately a large finite number rather than {@code
-     * Integer.MAX_VALUE} (mirrors {@link dev.icaro.foodtooltips.builder.BuilderWandService#UNLIMITED}):
-     * a natural formation of contiguous same-Material blocks (a stone mountain, an ocean floor)
-     * can run for a very long way, and true unbounded would spin the server thread clearing it
-     * instead of just stopping at a still-generous limit. 10,000 blocks is effectively unlimited
-     * for any real clear.
+     * opt-in, not a safety hole. Deliberately a bounded number, not {@code Integer.MAX_VALUE} or
+     * even a merely "large" one (mirrors {@link
+     * dev.icaro.foodtooltips.builder.BuilderWandService#UNLIMITED}): {@link #clearLine}/{@link
+     * #clearFace} clear every block synchronously, in the same tick, on the main server thread,
+     * so a natural formation of contiguous same-Material blocks (a stone mountain, an ocean
+     * floor) running for thousands of blocks would already freeze the server for a noticeable
+     * moment on its own, independent of ever looping forever. 1,000 blocks in one action is
+     * generous - several full walls' worth - while staying well short of a felt lag spike.
      */
-    public static final int UNLIMITED = 10_000;
+    public static final int UNLIMITED = 1_000;
 
     /**
      * The hand's current per-item block limit: {@link #UNLIMITED} if that's what's picked in

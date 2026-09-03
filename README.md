@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.38.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.38.1.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -754,10 +754,15 @@ Continua sendo uma ferramenta administrativa (permissão `foodtooltips.admin`
 nos comandos `/builderwand` e `/destroyerhand`), então é um opt-in
 deliberado, não um buraco de segurança.
 
-Internamente `UNLIMITED` não é literalmente infinito (`Integer.MAX_VALUE`
-teria um risco real de travar a thread do servidor: o modo Linha da Varinha
-só para ao encontrar um bloco não-ar, então apontar pro céu aberto em modo
-Criativo giraria o loop até estourar o limite de verdade) — é um número
-grande porém finito (10.000 blocos), generoso o bastante pra qualquer
-construção/limpeza real continuar parecendo ilimitada na prática, mas
-seguro contra esse caso extremo.
+Internamente `UNLIMITED` não é literalmente infinito. Além do risco óbvio
+de loop sem fim (`Integer.MAX_VALUE`: o modo Linha da Varinha só para ao
+encontrar um bloco não-ar, então apontar pro céu aberto em modo Criativo
+giraria o loop até estourar o limite de verdade), tem um segundo risco mais
+sutil: colocar/remover cada bloco é síncrono, na mesma tick, na thread
+principal do servidor — cada `setBlockData`/quebra de bloco pode disparar
+recálculo de física e luz, então mesmo um número "grande" como 10.000
+blocos numa ação só já é suficiente pra travar o servidor por um instante
+perceptível, independente de virar loop infinito ou não. Por isso o valor
+final é bem mais conservador: **1.000 blocos** por ação — generoso (várias
+construções/paredes inteiras de uma vez), mas curto o bastante pra não
+gerar uma trava sentida pelos jogadores.
