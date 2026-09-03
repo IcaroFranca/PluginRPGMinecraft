@@ -85,6 +85,22 @@ public final class CombatAbilityService {
         return Math.min(this.combat.maxLevel(), last + step * extra);
     }
 
+    /**
+     * Per-ability level requirement overrides layered on top of {@link #levelRequirement(int)}'s
+     * tier-based default, for a node whose intended power spike doesn't match its tier's usual
+     * gate. Sword Throw sits at tier 4 (it requires both branch finishers, Critical Mastery and
+     * Second Wind) but is meant to open up right alongside them, not two tiers of grinding later
+     * - so it uses tier 3's level (35) instead of tier 4's (60). Nothing else in the tree needs
+     * an override today, including the tier-4 Backpack node, which keeps the plain tier default.
+     */
+    private static final Map<CombatAbility, Integer> LEVEL_REQUIREMENT_OVERRIDES = Map.of(CombatAbility.SWORD_THROW, 35);
+
+    /** {@link #levelRequirement(int)}, but ability-aware - checks {@link #LEVEL_REQUIREMENT_OVERRIDES} first. */
+    public int levelRequirement(CombatAbility ability) {
+        Integer override = LEVEL_REQUIREMENT_OVERRIDES.get(ability);
+        return override != null ? override : this.levelRequirement(CombatTreeNode.of(ability).tier());
+    }
+
     /** Effective critical-damage multiplier (base config value, or Critical Mastery's if unlocked), as a raw multiplier (1.5 = +50%). */
     public double criticalDamageMultiplier(Player p) {
         return this.criticalMultiplier(p, this.baseCritMultiplier);
@@ -148,7 +164,7 @@ public final class CombatAbilityService {
         if (!this.prerequisitesMet(p, a)) {
             return PurchaseResult.PREREQUISITE_MISSING;
         }
-        if (this.combat.progress(p).level() < this.levelRequirement(CombatTreeNode.of(a).tier())) {
+        if (this.combat.progress(p).level() < this.levelRequirement(a)) {
             return PurchaseResult.LEVEL_TOO_LOW;
         }
         long cost = this.nextRankCost(p, a);
@@ -255,6 +271,20 @@ public final class CombatAbilityService {
     public long swordThrowCooldownMillis(Player p) {
         return Math.max(CombatTreeMath.MIN_COOLDOWN_MILLIS,
                 CombatTreeMath.swordThrowBaseCooldownMillis(this.rank(p, CombatAbility.SWORD_THROW), this.maxRank(CombatAbility.SWORD_THROW)));
+    }
+
+    /** Sword Throw's Mana cost at the player's current rank (see {@link CombatTreeMath#swordThrowManaCost}). */
+    public int swordThrowManaCost(Player p) {
+        return CombatTreeMath.swordThrowManaCost(this.rank(p, CombatAbility.SWORD_THROW), this.maxRank(CombatAbility.SWORD_THROW));
+    }
+
+    /**
+     * Withdraws Sword Throw's Mana cost from {@code p} if they can afford it. Returns false
+     * (and withdraws nothing) if they can't - the caller should treat that as "the throw didn't
+     * happen" and, importantly, not start the ability's cooldown for a throw that never fired.
+     */
+    public boolean spendSwordThrowMana(Player p) {
+        return this.stats.withdrawMana(p, this.swordThrowManaCost(p));
     }
 
     public double swordThrowDamageFraction(Player p) {
@@ -377,6 +407,7 @@ public final class CombatAbilityService {
             case SWORD_THROW -> {
                 out.add(this.pctAbs(pt ? "Dano" : "Damage", CombatTreeMath::swordThrowDamageFraction, cur, next, hasNext, max));
                 out.add(this.seconds(pt ? "Recarga" : "Cooldown", CombatTreeMath::swordThrowBaseCooldownMillis, cur, next, hasNext, max));
+                out.add(this.integer(pt ? "Custo de Mana" : "Mana cost", CombatTreeMath::swordThrowManaCost, cur, next, hasNext, max, ""));
                 out.add(this.flat(pt ? "Alcance de Ataque" : "Swing Range", CombatTreeMath::swordThrowSwingRangeBonus, cur, next, hasNext, max, ""));
             }
             case BLOOD_LUST -> {
@@ -473,7 +504,7 @@ public final class CombatAbilityService {
     public String description(CombatAbility a, boolean pt) {
         return switch (a) {
             case RUTHLESS_STRIKES -> pt ? "+1% de chance crítica por nível." : "+1% crit chance per level.";
-            case SWORD_THROW -> pt ? "F arremessa a espada; dano, recarga e alcance de ataque melhoram por nível." : "F throws your sword; damage, cooldown and swing range improve per level.";
+            case SWORD_THROW -> pt ? "F arremessa a espada, consumindo Mana; dano, recarga, custo de Mana e alcance de ataque melhoram por nível." : "F throws your sword, consuming Mana; damage, cooldown, Mana cost and swing range improve per level.";
             case BLOOD_LUST -> pt ? "Após uma sequência de abates sem ser atingido: dano bônus." : "After a kill streak without being hit: bonus damage.";
             case BERSERKER -> pt ? "Dano bônus quando estiver abaixo de 10% HP, escala por nível." : "Bonus damage while below 10% HP, scales per level.";
             case SOUL_HARVEST -> pt ? "Cura adicional por abate hostil e aumenta Regen. de Vida, escala por nível." : "Additional heal per hostile kill and raises Health Regen, scales per level.";

@@ -264,7 +264,7 @@ public final class CombatTreeMenuService {
         boolean unlocked = rank > 0;
         boolean maxed = rank >= max;
         boolean prereqOk = this.abilities.prerequisitesMet(p, ability);
-        int levelRequired = this.abilities.levelRequirement(node.tier());
+        int levelRequired = this.abilities.levelRequirement(ability);
         boolean levelOk = this.combat.progress(p).level() >= levelRequired;
         boolean purchasable = !maxed && prereqOk && levelOk;
         boolean active = node.kind() != CombatTreeNode.Kind.PASSIVE;

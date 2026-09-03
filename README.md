@@ -24,7 +24,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.34.0.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/NexusRPG-0.35.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 
@@ -566,3 +566,68 @@ O item em si é um `Bone` identificado por uma flag própria na
 tem sua tier forçada pra `S` via `ItemTierService#forceTier` ao ser
 criado, já que um `Bone` puro cairia em `C` por padrão (está em
 `C_ITEMS` no `ItemTierService`).
+
+## Arremesso de Espada: recarga menor, agora custa Mana; nível de desbloqueio
+
+**Recarga reduzida** (`CombatTreeMath#swordThrowBaseCooldownMillis`): a curva
+que ia de 30s (rank 1) a 3s (rank máximo) baixou pra 22s → 2s — um corte de
+~27% em toda a escala.
+
+**Novo custo de Mana** (`CombatTreeMath#swordThrowManaCost`): 35 no rank 1,
+caindo até 15 no rank máximo (dominar a habilidade barateia o cast, mesmo
+tema da própria recarga caindo por rank). `CombatAbilityService#spendSwordThrowMana`
+saca de `PlayerStatsService#withdrawMana` — se não tiver Mana suficiente, o
+arremesso simplesmente não sai (`SwordThrowListener#attemptThrow` mostra
+"Mana insuficiente" na action bar) e, importante, **não gasta a recarga** por
+um lançamento que nunca aconteceu. É a troca clássica de rebalanceamento:
+antes só a recarga limitava o quanto você conseguia spammar a habilidade,
+agora a Mana (um recurso de verdade, com regeneração própria) também entra
+na conta. O tooltip da árvore mostra a nova linha "Custo de Mana" junto de
+Dano/Recarga/Alcance.
+
+**Nível de desbloqueio: 35 em vez de 60.** Arremesso de Espada fica no tier 4
+da árvore (exige os dois "finalizadores" de ramo, Maestria Crítica e Segundo
+Fôlego), então pelo requisito padrão por tier (`tier-level-requirements`)
+precisaria de Nível de Combate 60 — dois tiers de grind depois de já ter os
+pré-requisitos prontos. Como isso não fazia sentido pra uma habilidade que
+deveria abrir *junto* com o topo dos dois ramos, `CombatAbilityService`
+ganhou um mecanismo de override por habilidade (`LEVEL_REQUIREMENT_OVERRIDES`),
+separado do requisito genérico por tier — só o Arremesso de Espada usa isso
+por enquanto (fixo em 35 no código, não é uma opção de `config.yml`, já que é
+uma decisão de design específica dessa habilidade, não um ajuste fino que
+faça sentido variar por servidor). O nó Mochila do próprio tier 4
+(`BACKPACK_4`) continua usando o requisito padrão de 60 normalmente — o
+override é por habilidade, não por tier inteiro.
+
+## Varinha e Mão do Destruidor: modo Linha/Coluna ou Face inteira
+
+As duas ferramentas ganharam um **menu de configuração**: clique esquerdo
+(sem agachar) nelas agora abre um inventário de 1 linha com duas opções —
+**Linha/Coluna** (o comportamento de sempre, estende/limpa só na direção da
+face clicada) e **Face inteira (parede/chão)** (novo: preenche/limpa toda a
+área conectada da parede ou chão que você está olhando). A opção marcada
+com ✔ e brilho é o modo atual; clicar na outra troca na hora. O modo fica
+gravado no próprio item (`BuilderWandService.FillMode`/
+`DestroyerHandService.FillMode`, uma segunda chave na
+`PersistentDataContainer` separada da que identifica a ferramenta), não no
+jogador — cada varinha/mão guarda sua própria configuração.
+
+**Modo Face inteira** é um flood-fill (busca em largura) na malha
+perpendicular à face clicada: pra Varinha, começa um bloco além do clicado
+(mesmo ponto de partida do modo Linha) e espalha por ar contíguo,
+preenchendo cada bloco com o mesmo `BlockData` do bloco original; pra Mão do
+Destruidor, começa no próprio bloco clicado e espalha por blocos contíguos
+do mesmo `Material`, limpando cada um. Os dois modos reusam o mesmo limite
+`max-length` do `config.yml` como teto de blocos processados (achatado, não
+elevado ao quadrado — uma parede de 64×64 seria grande demais pra processar
+de uma vez), então uma parede/chão muito grande só preenche/limpa até esse
+teto e para, sem estourar performance. Undo (shift + clique esquerdo)
+funciona igual nos dois modos, já que ele só depende da lista de blocos
+afetados guardada na última ação — não importa se ela veio de uma linha ou
+de um flood-fill.
+
+Com essa mudança, clique esquerdo *sem* agachar (que antes simplesmente não
+fazia nada, deixando a quebra normal do bloco vazar por baixo do cancelamento
+de evento) agora sempre abre o menu e cancela a interação — fechando de
+quebra uma pequena inconsistência onde seria possível minerar um bloco por
+engano segurando a ferramenta sem querer usá-la.

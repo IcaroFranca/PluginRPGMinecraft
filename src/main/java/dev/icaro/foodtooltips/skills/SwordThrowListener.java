@@ -65,6 +65,11 @@ implements Listener {
             p.sendActionBar((Component)Component.text((String)(Language.of(p).choose("Arremesso em recarga: ", "Sword Throw cooldown: ") + String.format(Locale.US, "%.1fs", (double)(ready - now) / 1000.0)), (TextColor)NamedTextColor.RED));
             return true;
         }
+        if (!this.abilities.spendSwordThrowMana(p)) {
+            // Not enough Mana - no cooldown wasted on a throw that never happened.
+            p.sendActionBar((Component)Component.text((String)(Language.of(p).choose("Mana insuficiente para arremessar.", "Not enough Mana to throw.")), (TextColor)NamedTextColor.RED));
+            return true;
+        }
         long cooldown = this.abilities.swordThrowCooldownMillis(p);
         this.cooldowns.put(p.getUniqueId(), now + cooldown);
         this.launch(p, sword);

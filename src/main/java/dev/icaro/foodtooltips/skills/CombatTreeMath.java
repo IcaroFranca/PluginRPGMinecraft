@@ -19,6 +19,8 @@ package dev.icaro.foodtooltips.skills;
 public final class CombatTreeMath {
     /** Absolute safety floor applied after every cooldown-reducing effect stacks. */
     public static final long MIN_COOLDOWN_MILLIS = 1000L;
+    /** Absolute safety floor for any ability's Mana cost, however low rank/scaling pushes it. */
+    public static final int MIN_MANA_COST = 5;
 
     private CombatTreeMath() {
     }
@@ -137,7 +139,17 @@ public final class CombatTreeMath {
     }
 
     public static long swordThrowBaseCooldownMillis(int rank, int maxRank) {
-        return Math.round(lerp(30.0, 3.0, rank, maxRank) * 1000.0);
+        return Math.round(lerp(22.0, 2.0, rank, maxRank) * 1000.0);
+    }
+
+    /**
+     * Mana cost of one throw, scaling from 35 (rank 1) down to 15 (max rank) - mastering
+     * the ability makes it cheaper to spam, on top of the cooldown already dropping.
+     * Paired with the cooldown cut above: throwing more often is now gated by Mana
+     * (a real resource with a regen rate) instead of purely by a long cooldown timer.
+     */
+    public static int swordThrowManaCost(int rank, int maxRank) {
+        return lerpInt(35.0, 15.0, rank, maxRank, MIN_MANA_COST);
     }
 
     /** Flat Swing Range bonus granted by Sword Throw alongside its damage/cooldown. */
