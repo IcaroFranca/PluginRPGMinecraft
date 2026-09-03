@@ -599,6 +599,15 @@ faça sentido variar por servidor). O nó Mochila do próprio tier 4
 (`BACKPACK_4`) continua usando o requisito padrão de 60 normalmente — o
 override é por habilidade, não por tier inteiro.
 
+**A posição na grade também mudou**, não só o número: o slot do Arremesso de
+Espada saiu de 22 (linha do tier 4, ao lado do medidor "60") pra 31 (linha do
+tier 3, ao lado do medidor "35"), ficando entre Maestria Crítica (coluna 2) e
+Segundo Fôlego (coluna 5) — o ponto exato onde as duas correntes se
+encontram. Sem isso, o ícone continuava desenhado na linha errada mesmo
+depois do requisito numérico mudar, o que é enganoso: o jogador vê o medidor
+de Nível de Combate daquela linha mostrando 60, mas a habilidade ao lado só
+precisa de 35 de verdade.
+
 ## Varinha e Mão do Destruidor: modo Linha/Coluna ou Face inteira
 
 As duas ferramentas ganharam um **menu de configuração**: clique esquerdo

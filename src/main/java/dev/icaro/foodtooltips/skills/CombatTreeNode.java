@@ -65,10 +65,15 @@ public record CombatTreeNode(CombatAbility ability, CombatBranch branch, List<Co
         register(CombatAbility.SOUL_HARVEST, CombatBranch.SUSTAIN, 14, Kind.PASSIVE, 41, CombatAbility.BLOOD_LUST);
         register(CombatAbility.SECOND_WIND, CombatBranch.SUSTAIN, 18, Kind.PASSIVE, 32, CombatAbility.SOUL_HARVEST);
 
-        // ---- Utility (precision) ---- SWORD_THROW now sits above both Fury and Sustain's
-        // 3-tier chains, requiring the top of each: it's the tree's real pinnacle active
-        // ability, not a root gated behind a throwaway passive like it used to be.
-        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 22, Kind.ACTIVE_KEYBIND, 22,
+        // ---- Utility (precision) ---- SWORD_THROW converges both Fury and Sustain's
+        // 3-tier chains, requiring the top of each. Structurally that makes it tier 4
+        // (one past its tier-3 prerequisites), but its level requirement is overridden
+        // down to tier 3's (35, not 60 - see CombatAbilityService#LEVEL_REQUIREMENT_OVERRIDES),
+        // since it's meant to open up right alongside its prerequisites, not two tiers of
+        // grinding later. Slot 31 keeps the grid honest about that: it sits in tier 3's own
+        // row (the one whose Combat Level gauge reads 35), directly between Critical Mastery
+        // (col 2) and Second Wind (col 5) - the exact point where the two chains meet.
+        register(CombatAbility.SWORD_THROW, CombatBranch.UTILITY, 22, Kind.ACTIVE_KEYBIND, 31,
                 CombatAbility.CRITICAL_MASTERY, CombatAbility.SECOND_WIND);
 
         // ---- Storage ---- the Combat Backpack's 6 capacity levels (9/18/27/36/45/54
