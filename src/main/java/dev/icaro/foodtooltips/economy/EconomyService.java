@@ -88,7 +88,7 @@ public final class EconomyService {
         if ((old = board.getObjective("rpg_sidebar")) != null) {
             old.unregister();
         }
-        Objective objective = board.registerNewObjective("rpg_sidebar", Criteria.DUMMY, (Component)Component.text((String)"\u2726 NexusRPG", (TextColor)NamedTextColor.GOLD));
+        Objective objective = board.registerNewObjective("rpg_sidebar", Criteria.DUMMY, (Component)Component.text((String)"\u2726 IcarusRPG", (TextColor)NamedTextColor.GOLD));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
         objective.getScore(" ").setScore(3);
         objective.getScore(String.valueOf(ChatColor.GOLD) + Language.of(p).choose("Moedas", "Coins")).setScore(2);

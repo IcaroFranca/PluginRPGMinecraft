@@ -26,6 +26,6 @@ jobs:
       - name: Upload plugin jar
         uses: actions/upload-artifact@v7
         with:
-          name: NexusRPG-jar
-          path: target/NexusRPG-*.jar
+          name: IcarusRPG-jar
+          path: target/IcarusRPG-*.jar
           if-no-files-found: error

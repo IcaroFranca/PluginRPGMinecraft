@@ -1,7 +1,14 @@
-# NexusRPG
+# IcarusRPG
 
 Plugin de RPG para servidores Paper/Spigot (`dev.icaro.foodtooltips.FoodTooltipsPlugin`,
-registrado como `NexusRPG` no `plugin.yml`).
+registrado como `IcarusRPG` no `plugin.yml`).
+
+> **Renomeado de NexusRPG pra IcarusRPG na v0.39.0.** O pacote Java
+> (`dev.icaro.foodtooltips`) não mudou, mas o `name:` do `plugin.yml` mudou —
+> e é esse campo que o Bukkit usa pra nomear a pasta de dados do plugin. Ao
+> atualizar um servidor existente, mova `plugins/NexusRPG/` pra
+> `plugins/IcarusRPG/` (config, dados de jogadores etc.) antes de subir o jar
+> novo, ou o plugin sobe com uma pasta vazia e perde as configurações salvas.
 
 ## Estado deste repositório
 
@@ -24,7 +31,7 @@ Maven. Funcionalmente deve corresponder ao jar original, mas:
 mvn package
 ```
 
-Gera `target/NexusRPG-0.38.1.jar`. Requer acesso ao repositório da PaperMC
+Gera `target/IcarusRPG-0.39.0.jar`. Requer acesso ao repositório da PaperMC
 (`https://repo.papermc.io/repository/maven-public/`) e, para o hook de
 WorldGuard, ao repositório da EngineHub (`https://maven.enginehub.org/repo/`).
 

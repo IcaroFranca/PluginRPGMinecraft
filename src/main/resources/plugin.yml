@@ -1,9 +1,9 @@
-name: NexusRPG
-version: '0.38.1'
+name: IcarusRPG
+version: '0.39.0'
 main: dev.icaro.foodtooltips.FoodTooltipsPlugin
 api-version: '26.2'
 author: icaro
-prefix: NexusRPG
+prefix: IcarusRPG
 softdepend: [Geyser-Spigot, floodgate, WorldGuard, GriefPrevention]
 commands:
   coins:

@@ -4,11 +4,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>dev.icaro</groupId>
-  <artifactId>nexusrpg</artifactId>
-  <version>0.38.1</version>
+  <artifactId>icarusrpg</artifactId>
+  <version>0.39.0</version>
   <packaging>jar</packaging>
 
-  <name>NexusRPG</name>
+  <name>IcarusRPG</name>
   <description>RPG gameplay plugin for Paper/Spigot Minecraft servers.</description>
 
   <properties>
